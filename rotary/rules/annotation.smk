@@ -17,6 +17,9 @@ VERSION_IPR5=VERSION_IPR5_MAJOR + '_' + VERSION_IPR5_MINOR
 
 DB_DIR_PATH = config.get('db_dir')
 
+IPR5_MD5_URL=f'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}/interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}-64-bit.tar.gz.md5'
+IPR5_URL=f'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}/interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}-64-bit.tar.gz '
+
 KEEP_BAM_FILES=is_config_parameter_true(config,'keep_final_coverage_bam_files')
 RUN_EGGNOG=is_config_parameter_true(config,'run_eggnog')
 RUN_INTERPROSCAN=is_config_parameter_true(config,'run_interprosan')
@@ -28,22 +31,24 @@ rule download_ipr5_db:
         db=directory(os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5)),
         install_finished=os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_download'),
         ipr5_database=directory(os.path.join(DB_DIR_PATH,f'ipr5_{VERSION_IPR5}/interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}/'))
-    log:
-        "logs/download/ipr5_db_download.log"
     benchmark:
         "benchmarks/download/ir5_db_download.txt"
+    log:
+        "logs/download/ipr5_db_download.log"
     params:
         db_dir=os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5),
         major_version=VERSION_IPR5_MAJOR,
-        minor_version=VERSION_IPR5_MINOR
+        minor_version=VERSION_IPR5_MINOR,
+        ipr5_md5_url=IPR5_MD5_URL,
+        ipr5_url=IPR5_URL
     shell:
         """
         mkdir -p {params.db_dir}
         cd {params.db_dir}
-        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 > {log} 2>&1
-        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz >> {log} 2>&1
-        md5sum -c interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 >> {log} 2>&1
-        tar xvzf interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz >> {log} 2>&1
+        wget -c -N -P {params.db_dir} {params.ipr5_md5_url} > {log} 2>&1
+        wget -c -N -P {params.db_dir} {params.ipr5_url} >> {log} 2>&1
+        md5sum -c {params.db_dir}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 >> {log} 2>&1
+        tar xvzf -C {params.db_dir} {params.db_dir}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz >> {log} 2>&1
         touch {output.install_finished} 
         """
 
