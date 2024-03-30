@@ -10,11 +10,87 @@ VERSION_EGGNOG="5.0.0" # See http://eggnog5.embl.de/#/app/downloads
 VERSION_GTDB_COMPLETE= "214.1" # See https://data.gtdb.ecogenomic.org/releases/
 VERSION_GTDB_MAIN=VERSION_GTDB_COMPLETE.split('.')[0] # Remove subversion
 
+VERSION_IPR5_MAJOR='5.59'
+VERSION_IPR5_MINOR='91.0'
+
+VERSION_IPR5=VERSION_IPR5_MAJOR + '_' + VERSION_IPR5_MINOR
+
 DB_DIR_PATH = config.get('db_dir')
 
-KEEP_BAM_FILES = is_config_parameter_true(config,'keep_final_coverage_bam_files')
+KEEP_BAM_FILES=is_config_parameter_true(config,'keep_final_coverage_bam_files')
+RUN_EGGNOG=is_config_parameter_true(config,'run_eggnog')
+RUN_INTERPROSCAN=is_config_parameter_true(config,'run_interprosan')
 
 # SAMPLE_NAMES, and POLISH_WITH_SHORT_READS are instantiated in rotary.smk
+
+rule download_ipr5_db:
+    output:
+        db=directory(os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5)),
+        install_finished=os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_download')
+    log:
+        "logs/download/ipr5_db_download.log"
+    benchmark:
+        "benchmarks/download/ir5_db_download.txt"
+    params:
+        db_dir=os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5),
+        major_version=VERSION_IPR5_MAJOR,
+        minor_version=VERSION_IPR5_MINOR
+    shell:
+        """(
+        mkdir -p {params.db_dir}
+        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/${params.major_version}-${params.minor_version}/interproscan-${params.major_version}-${params.minor_version}-64-bit.tar.gz.md5
+        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/${params.major_version}-${params.minor_version}/interproscan-${params.major_version}-${params.minor_version}-64-bit.tar.gz
+        md5sum -c interproscan-${params.major_version}-${params.minor_version}-64-bit.tar.gz.md5
+        tar xvzf interproscan-${params.major_version}-${params.minor_version}-64-bit.tar.gz
+        touch {output.install_finished}
+        ) >{log} 2>&1
+        """
+
+rule repress_ipr5_db:
+    input:
+        os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_download')
+    output:
+        os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_press')
+    conda:
+        "../envs/interproscan.yaml"
+    log:
+        "logs/download/ipr5_db_press.log"
+    benchmark:
+        "benchmarks/download/ir5_db_press.txt"
+    params:
+        db_dir=os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5),
+        major_version=VERSION_IPR5_MAJOR,
+        minor_version=VERSION_IPR5_MINOR
+    shell:
+        """(
+        cd {params.db_dir}/interproscan-{params.major_version}-{params.major_version}/
+        python setup.py -f interproscan.properties
+        touch {output}
+        ) >{log} 2>&1
+        """
+
+rule copy_ipr_5_db_to_env:
+    input:
+        os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_press')
+    output:
+        os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_copy')
+    conda:
+        "../envs/interproscan.yaml"
+    log:
+        "logs/download/ipr5_db_copy.log"
+    benchmark:
+        "benchmarks/download/ipr5_db_copy.txt"
+    params:
+        db_dir=os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5),
+        major_version=VERSION_IPR5_MAJOR,
+        minor_version=VERSION_IPR5_MINOR
+    shell:
+        """(
+        rm -rf $CONDA_PREFIX/share/InterProScan/data/
+        cp -r {params.db_dir}/interproscan-${params.major_version}-${params.major_version}/data $CONDA_PREFIX/share/InterProScan/
+        touch {output}
+        ) >{log} 2>&1"""
+
 
 rule download_dfast_db:
     output:
@@ -35,7 +111,6 @@ rule download_dfast_db:
         dfast_file_downloader.py --cdd Cog --hmm TIGR --dbroot {params.db_dir} >> {log} 2>&1
         touch {output.install_finished}
         """
-
 
 rule download_eggnog_db:
     output:
@@ -232,6 +307,32 @@ rule run_eggnog:
         """
 
 
+rule run_interproscan:
+    input:
+        protein="{sample}/annotation/dfast/{sample}_protein.faa",
+        install_finished=os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_copy')
+    output:
+        "{sample}/annotation/interproscan/{sample}_ipr5.tsv"
+    conda:
+        "../envs/eggnog.yaml"
+    log:
+        "{sample}/logs/annotation/eggnog.log"
+    benchmark:
+        "{sample}/benchmarks/annotation/eggnog.txt"
+    params:
+        analyses=config.get('interproscan_analyses'),
+        disable_precalc= '-dp' if is_config_parameter_true(config,'interproscan_disable_precalc') else ''
+    threads:
+        config.get("threads",1)
+    shell:
+        """
+        interproscan.sh -cpu {threads} \
+        -pa -goterms -i {input.protein} \
+        {params.disable_precalc} -o {output} -f TSV -iprlookup \
+        -appl {params.analyses}
+        > {log} 2>&1
+        """
+
 rule run_gtdbtk:
     input:
         genome="{sample}/annotation/dfast/{sample}_genome.fna",
@@ -376,9 +477,10 @@ rule symlink_logs:
 rule summarize_annotation:
     input:
         "{sample}/annotation/dfast/{sample}_genome.fna",
-        "{sample}/annotation/eggnog/{sample}.emapper.annotations",
+        "{sample}/annotation/eggnog/{sample}.emapper.annotations" if RUN_EGGNOG else [],
         "{sample}/annotation/gtdbtk/{sample}_gtdbtk.summary.tsv",
         "{sample}/annotation/checkm/",
+        "{sample}/annotation/interproscan/{sample}_ipr5.tsv" if RUN_INTERPROSCAN else [],
         expand("{{sample}}/annotation/coverage/{{sample}}_{type}_coverage.tsv",
             type=["short_read", "long_read"] if POLISH_WITH_SHORT_READS == True else ["long_read"]),
         "{sample}/annotation/logs",

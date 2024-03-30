@@ -120,10 +120,21 @@ hmmsearch_evalue: 1e-40
 #    Set to "full_tree" to use the GTDB-Tk v1 method (needs ~320 GB RAM!)
 #    Otherwise, it will use the v2 phylogenetic placement method needing ~55 GB RAM.
 gtdbtk_mode: "default"
+
+# EggNOG Annotation
+run_eggnog: 'True'
 # EggNOG annotation sensitivity mode (using DIAMOND)
 #    Options: fast, mid-sensitive, sensitive, more-sensitive, very-sensitive, ultra-sensitive
 eggnog_sensmode: "sensitive"
 # The search tool that emapper.py should use (diamond or mmseqs).
 eggnog_search_tool: 'mmseqs'
 # Keep final coverage read mapping BAM files for further analysis.
+
+# Interproscan Annotation
+run_interprosan: 'True'
+# Interproscan Analyses (remove the ones you don't want to run)
+interproscan_analyses: 'CDD,COILS,Gene3D,HAMAP,MobiDBLite,PANTHER,Pfam,PIRSF,PRINTS,PROSITEPATTERNS,PROSITEPROFILES,SFLD,SMART,SUPERFAMILY,TIGRFAM'
+# disable-precalc: disable sending the protein sequences to ebi to see if they have pre-calculate results.
+interproscan_disable_precalc: 'False'
+
 keep_final_coverage_bam_files: 'False'
