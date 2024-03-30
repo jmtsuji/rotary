@@ -26,7 +26,8 @@ RUN_INTERPROSCAN=is_config_parameter_true(config,'run_interprosan')
 rule download_ipr5_db:
     output:
         db=directory(os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5)),
-        install_finished=os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_download')
+        install_finished=os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_download'),
+        database_file=os.path.join(DB_DIR_PATH,f'interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}-64-bit.tar.gz')
     log:
         "logs/download/ipr5_db_download.log"
     benchmark:
@@ -38,10 +39,10 @@ rule download_ipr5_db:
     shell:
         """(
         mkdir -p {params.db_dir}
-        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/${params.major_version}-${params.minor_version}/interproscan-${params.major_version}-${params.minor_version}-64-bit.tar.gz.md5
-        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/${params.major_version}-${params.minor_version}/interproscan-${params.major_version}-${params.minor_version}-64-bit.tar.gz
-        md5sum -c interproscan-${params.major_version}-${params.minor_version}-64-bit.tar.gz.md5
-        tar xvzf interproscan-${params.major_version}-${params.minor_version}-64-bit.tar.gz
+        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5
+        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz
+        md5sum -c interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5
+        tar xvzf interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz
         touch {output.install_finished}
         ) >{log} 2>&1
         """
