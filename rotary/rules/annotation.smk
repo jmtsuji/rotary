@@ -314,7 +314,7 @@ rule run_interproscan:
     output:
         "{sample}/annotation/interproscan/{sample}_ipr5.tsv"
     conda:
-        "../envs/eggnog.yaml"
+        "../envs/interproscan.yaml"
     log:
         "{sample}/logs/annotation/eggnog.log"
     benchmark:
