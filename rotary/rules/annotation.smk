@@ -37,14 +37,13 @@ rule download_ipr5_db:
         major_version=VERSION_IPR5_MAJOR,
         minor_version=VERSION_IPR5_MINOR
     shell:
-        """(
+        """
         mkdir -p {params.db_dir}
-        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5
-        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz
-        md5sum -c interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5
-        tar xvzf interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz
-        touch {output.install_finished}
-        ) >{log} 2>&1
+        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 > {log} 2>&1
+        wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz >> {log} 2>&1
+        md5sum -c interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 >> {log} 2>&1
+        tar xvzf interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz >> {log} 2>&1
+        touch {output.install_finished} 
         """
 
 rule repress_ipr5_db:
@@ -63,11 +62,10 @@ rule repress_ipr5_db:
         major_version=VERSION_IPR5_MAJOR,
         minor_version=VERSION_IPR5_MINOR
     shell:
-        """(
+        """
         cd {params.db_dir}/interproscan-{params.major_version}-{params.major_version}/
-        python setup.py -f interproscan.properties
+        python setup.py -f interproscan.properties > {log} 2>&1
         touch {output}
-        ) >{log} 2>&1
         """
 
 rule copy_ipr_5_db_to_env:
@@ -86,11 +84,11 @@ rule copy_ipr_5_db_to_env:
         major_version=VERSION_IPR5_MAJOR,
         minor_version=VERSION_IPR5_MINOR
     shell:
-        """(
+        """
         rm -rf $CONDA_PREFIX/share/InterProScan/data/
-        cp -r {params.db_dir}/interproscan-${params.major_version}-${params.major_version}/data $CONDA_PREFIX/share/InterProScan/
+        cp -r {params.db_dir}/interproscan-${params.major_version}-${params.major_version}/data $CONDA_PREFIX/share/InterProScan/ > {log} 2>&1
         touch {output}
-        ) >{log} 2>&1"""
+        """
 
 
 rule download_dfast_db:
