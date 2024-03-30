@@ -28,9 +28,7 @@ RUN_INTERPROSCAN=is_config_parameter_true(config,'run_interprosan')
 
 rule download_ipr5_db:
     output:
-        db=directory(os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5)),
-        install_finished=os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_download'),
-        ipr5_database=directory(os.path.join(DB_DIR_PATH,f'ipr5_{VERSION_IPR5}/interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}/'))
+        ipr5_file=os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5, f'interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}-64-bit.tar.gz')
     benchmark:
         "benchmarks/download/ir5_db_download.txt"
     log:
@@ -43,19 +41,36 @@ rule download_ipr5_db:
         ipr5_url=IPR5_URL
     shell:
         """
-        mkdir -p {params.db_dir}
-        wget -c -N {params.ipr5_md5_url} > {log} 2>&1
-        wget -c -N {params.ipr5_url} >> {log} 2>&1
+        wget -c {params.ipr5_md5_url} > {log} 2>&1
+        wget -c {params.ipr5_url} >> {log} 2>&1
         md5sum -c --strict interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 >> {log} 2>&1
         mv interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz {params.db_dir} >> {log} 2>&1
-        tar -C {params.db_dir} -xvzf {params.db_dir}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz  >> {log} 2>&1
         rm interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 >> {log} 2>&1
-        touch {output.install_finished} 
+        """
+
+rule unpack_ipr5_db:
+    input:
+        ipr5_file=os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5,f'interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}-64-bit.tar.gz')
+    output:
+        ipr5_dir=directory(os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5,f'interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}'))
+    benchmark:
+        "benchmarks/download/ir5_db_unpack.txt"
+    log:
+        "logs/download/ipr5_db_unpack.log"
+    params:
+        db_dir=os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5),
+        major_version=VERSION_IPR5_MAJOR,
+        minor_version=VERSION_IPR5_MINOR,
+        ipr5_md5_url=IPR5_MD5_URL,
+        ipr5_url=IPR5_URL
+    shell:
+        """
+        tar -C {params.db_dir} -xvzf {params.db_dir}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz  >> {log} 2>&1
         """
 
 rule repress_ipr5_db:
     input:
-        os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_download')
+        os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5,f'interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}')
     output:
         os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_press')
     conda:
