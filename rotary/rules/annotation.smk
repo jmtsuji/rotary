@@ -27,7 +27,7 @@ rule download_ipr5_db:
     output:
         db=directory(os.path.join(DB_DIR_PATH,"ipr5_" + VERSION_IPR5)),
         install_finished=os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_download'),
-        database_file=os.path.join(DB_DIR_PATH,f'interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}-64-bit.tar.gz')
+        ipr5_database=directory(os.path.join(DB_DIR_PATH,f'ipr5_{VERSION_IPR5}/interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}/'))
     log:
         "logs/download/ipr5_db_download.log"
     benchmark:
@@ -39,6 +39,7 @@ rule download_ipr5_db:
     shell:
         """
         mkdir -p {params.db_dir}
+        cd {params.db_dir}
         wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 > {log} 2>&1
         wget http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{params.major_version}-{params.minor_version}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz >> {log} 2>&1
         md5sum -c interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 >> {log} 2>&1
