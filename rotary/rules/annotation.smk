@@ -44,7 +44,6 @@ rule download_ipr5_db:
     shell:
         """
         mkdir -p {params.db_dir}
-        cd {params.db_dir}
         wget -c -N -P {params.db_dir} {params.ipr5_md5_url} > {log} 2>&1
         wget -c -N -P {params.db_dir} {params.ipr5_url} >> {log} 2>&1
         md5sum -c {params.db_dir}/interproscan-{params.major_version}-{params.minor_version}-64-bit.tar.gz.md5 >> {log} 2>&1
