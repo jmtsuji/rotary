@@ -85,8 +85,9 @@ rule repress_ipr5_db:
         minor_version=VERSION_IPR5_MINOR
     shell:
         """
+        ABS_LOG_PATH=$(realpath {log})
         cd {params.db_dir}/interproscan-{params.major_version}-{params.minor_version}/
-        python setup.py -f interproscan.properties > {log} 2>&1
+        python setup.py -f interproscan.properties > $ABS_LOG_PATH 2>&1
         touch {output}
         """
 
@@ -97,8 +98,6 @@ rule copy_ipr_5_db_to_conda_env:
         os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_copy')
     conda:
         "../envs/interproscan.yaml"
-    log:
-        "logs/download/ipr5_db_copy.log"
     benchmark:
         "benchmarks/download/ipr5_db_copy.txt"
     params:
@@ -108,7 +107,7 @@ rule copy_ipr_5_db_to_conda_env:
     shell:
         """
         rm -rf $CONDA_PREFIX/share/InterProScan/data/
-        cp -r {params.db_dir}/interproscan-${params.major_version}-${params.major_version}/data $CONDA_PREFIX/share/InterProScan/ > {log} 2>&1
+        cp -r {params.db_dir}/interproscan-{params.major_version}-{params.minor_version}/data $CONDA_PREFIX/share/InterProScan/
         touch {output}
         """
 
