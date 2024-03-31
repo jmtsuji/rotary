@@ -336,9 +336,9 @@ rule run_interproscan:
     conda:
         "../envs/interproscan.yaml"
     log:
-        "{sample}/logs/annotation/eggnog.log"
+        "{sample}/logs/annotation/interproscan.log"
     benchmark:
-        "{sample}/benchmarks/annotation/eggnog.txt"
+        "{sample}/benchmarks/annotation/interproscan.txt"
     params:
         analyses=config.get('interproscan_analyses'),
         disable_precalc= '-dp' if is_config_parameter_true(config,'interproscan_disable_precalc') else ''
@@ -349,7 +349,7 @@ rule run_interproscan:
         interproscan.sh -cpu {threads} \
         -pa -goterms -i {input.protein} \
         {params.disable_precalc} -o {output} -f TSV -iprlookup \
-        -appl {params.analyses}
+        -appl {params.analyses} \
         > {log} 2>&1
         """
 

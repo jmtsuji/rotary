@@ -133,7 +133,7 @@ eggnog_search_tool: 'mmseqs'
 # Interproscan Annotation
 run_interprosan: 'True'
 # Interproscan Analyses (remove the ones you don't want to run)
-interproscan_analyses: 'CDD,COILS,Gene3D,HAMAP,MobiDBLite,PANTHER,Pfam,PIRSF,PRINTS,PROSITEPATTERNS,PROSITEPROFILES,SFLD,SMART,SUPERFAMILY,TIGRFAM'
+interproscan_analyses: 'CDD,COILS,Gene3D,HAMAP,MobiDBLite,Pfam,PIRSF,PRINTS,PROSITEPATTERNS,PROSITEPROFILES,SFLD,SMART,SUPERFAMILY,TIGRFAM'
 # disable-precalc: disable sending the protein sequences to ebi to see if they have pre-calculate results.
 interproscan_disable_precalc: 'False'
 
