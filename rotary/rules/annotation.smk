@@ -85,12 +85,12 @@ rule repress_ipr5_db:
         minor_version=VERSION_IPR5_MINOR
     shell:
         """
-        cd {params.db_dir}/interproscan-{params.major_version}-{params.major_version}/
+        cd {params.db_dir}/interproscan-{params.major_version}-{params.minor_version}/
         python setup.py -f interproscan.properties > {log} 2>&1
         touch {output}
         """
 
-rule copy_ipr_5_db_to_env:
+rule copy_ipr_5_db_to_conda_env:
     input:
         os.path.join(DB_DIR_PATH,"checkpoints","ipr5_" + VERSION_IPR5 + '_press')
     output:
