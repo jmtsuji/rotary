@@ -123,7 +123,12 @@ def init(args):
 
     input_path = get_cli_arg_path(args, 'input_dir')
 
-    dataset = generate_dataset_from_fastq_directory(input_path, expected_files_per_sample=3)
+    if get_cli_arg(args, 'no_short'):
+        expected_files_per_sample = 1
+    else:
+        expected_files_per_sample = 3
+
+    dataset = generate_dataset_from_fastq_directory(input_path, expected_files_per_sample=expected_files_per_sample)
 
     dataset.create_sample_tsv(output_dir_path, header=sample_tsv_header_fields)
 
@@ -189,6 +194,8 @@ def parse_cli():
                              help='path to a directory containing Oxford Nanopore long-read and Illumina short-read .fastq(.gz) files')
     parser_init.add_argument('-f', '--force', action='store_true',
                              help="override existing run configuration files.")
+    parser_init.add_argument('-ns', '--no_short', action='store_true',
+                             help="do not search for short read files")
     parser_init.set_defaults(init=True)
     return parser
 
