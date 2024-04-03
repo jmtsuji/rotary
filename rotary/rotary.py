@@ -90,7 +90,7 @@ def run_one(args):
     sequencing_files = [SequencingFile(path) for path in sequencing_file_cli_paths if path]
 
     if len(sequencing_files) in [1, 3]:
-        sample = auto_create_sample_from_files(sequencing_files,
+        sample = auto_create_sample_from_files(*sequencing_files,
                                                # Don't do an identifier check on user-specified files.
                                                identifier_check=False,
                                                # Don't do integrity check on user-specified files.
