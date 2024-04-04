@@ -35,18 +35,20 @@ rule map_long_reads_for_medaka:
         "{sample}/benchmarks/{step}/map_long_reads_medaka.txt"
     threads:
         config.get("threads",1)
+    params:
+        output_base_name='{sample}/{step}/medaka/calls_to_draft'
     shell:
         """
-        mini_align -i {input.qc_long_reads} -r {input.contigs} -m -p {output.calls_to_draft_bam} -t {threads} > {log} 2>&1
+        mini_align -i {input.qc_long_reads} -r {input.contigs} -m -p {params.output_base_name} -t {threads} > {log} 2>&1
         """
 
 rule polish_medaka:
     input:
         calls_to_draft_bam ='{sample}/{step}/medaka/calls_to_draft.bam',
-        qc_long_reads="{sample}/qc/{sample}_qc_long.fastq.gz",
+        calls_to_draft_bam_index='{sample}/{step}/medaka/calls_to_draft.bam.bai',
         contigs="{sample}/{step}/medaka_input/{sample}_input.fasta"
     output:
-        dir=directory("{sample}/{step}/medaka/results")
+        directory("{sample}/{step}/medaka/results")
     conda:
         "../envs/medaka.yaml"
     log:
@@ -60,12 +62,14 @@ rule polish_medaka:
         round(config.get("threads",1) / 2)
     shell:
         """
-        seqkit seq -n {input.contigs} | parallel -j {threads} 'medaka consensus {input.calls_to_draft_bam} {output.dir}/{{}}.hdf --model {params.medaka_model} --batch {params.batch_size} --threads 2 --region {{}}' > {log} 2>&1
+        mkdir -p {output}
+        seqkit seq -n {input.contigs} | parallel -k -j {threads} 'medaka consensus {input.calls_to_draft_bam} {output}/{{}}.hdf --model {params.medaka_model} --batch {params.batch_size} --threads 2 --region {{}}' > {log} 2>&1
         """
 
 rule stitch_medaka:
     input:
-        "{sample}/{step}/medaka/results"
+        hdf5_dir="{sample}/{step}/medaka/results",
+        draft_fasta="{sample}/polish/medaka_input/{sample}_input.fasta"
     output:
         "{sample}/{step}/medaka/{sample}_consensus.fasta"
     conda:
@@ -74,12 +78,14 @@ rule stitch_medaka:
         "{sample}/logs/{step}/medaka_stich.log"
     benchmark:
         "{sample}/benchmarks/{step}/medaka_stich.txt"
+    threads:
+        config.get("threads",1)
     params:
         medaka_model=config.get("medaka_model"),
         batch_size=config.get("medaka_batch_size")
     shell:
         """
-        medaka stitch {input}/*.hdf {output}  > {log} 2>&1
+        medaka stitch --threads {threads} {input.hdf5_dir}/*.hdf {input.draft_fasta} {output} > {log} 2>&1
         """
 
 
