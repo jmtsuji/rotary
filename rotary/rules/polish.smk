@@ -20,16 +20,33 @@ rule prepare_medaka_polish_input:
         source_relpath = os.path.relpath(str(input),os.path.dirname(str(output)))
         os.symlink(source_relpath,str(output))
 
-
-rule polish_medaka:
+rule map_long_reads_for_medaka:
     input:
         qc_long_reads="{sample}/qc/{sample}_qc_long.fastq.gz",
         contigs="{sample}/{step}/medaka_input/{sample}_input.fasta"
     output:
-        dir=directory("{sample}/{step}/medaka"),
-        contigs="{sample}/{step}/medaka/{sample}_consensus.fasta",
-        calls_to_draft=temp(multiext("{sample}/{step}/medaka/calls_to_draft", '.bam', '.bam.bai')),
-        consensus_probs=temp("{sample}/{step}/medaka/consensus_probs.hdf")
+        calls_to_draft_bam=temp('{sample}/{step}/medaka/calls_to_draft.bam'),
+        calls_to_draft_bam_index=temp('{sample}/{step}/medaka/calls_to_draft.bam.bai')
+    conda:
+        "../envs/medaka.yaml"
+    log:
+        "{sample}/logs/{step}/map_long_reads_medaka.log"
+    benchmark:
+        "{sample}/benchmarks/{step}/map_long_reads_medaka.txt"
+    threads:
+        config.get("threads",1)
+    shell:
+        """
+        mini_align -i {input.qc_long_reads} -r {input.contigs} -m -p {output.calls_to_draft_bam} -t {threads} > {log} 2>&1
+        """
+
+rule polish_medaka:
+    input:
+        calls_to_draft_bam ='{sample}/{step}/medaka/calls_to_draft.bam',
+        qc_long_reads="{sample}/qc/{sample}_qc_long.fastq.gz",
+        contigs="{sample}/{step}/medaka_input/{sample}_input.fasta"
+    output:
+        dir=directory("{sample}/{step}/medaka/results")
     conda:
         "../envs/medaka.yaml"
     log:
@@ -40,12 +57,29 @@ rule polish_medaka:
         medaka_model=config.get("medaka_model"),
         batch_size=config.get("medaka_batch_size")
     threads:
-        config.get("threads",1)
+        round(config.get("threads",1) / 2)
     shell:
         """
-        medaka_consensus -i {input.qc_long_reads} -d {input.contigs} -o {output.dir} \
-          -m {params.medaka_model} -t {threads} -b {params.batch_size} > {log} 2>&1
-        mv {output.dir}/consensus.fasta {output.contigs}
+        seqkit seq -n {input.contigs} | parallel -j {threads} 'medaka consensus {input.calls_to_draft_bam} {output.dir}/{{}}.hdf --model {params.medaka_model} --batch {params.batch_size} --threads 2 --region {{}}' > {log} 2>&1
+        """
+
+rule stitch_medaka:
+    input:
+        "{sample}/{step}/medaka/results"
+    output:
+        "{sample}/{step}/medaka/{sample}_consensus.fasta"
+    conda:
+        "../envs/medaka.yaml"
+    log:
+        "{sample}/logs/{step}/medaka_stich.log"
+    benchmark:
+        "{sample}/benchmarks/{step}/medaka_stich.txt"
+    params:
+        medaka_model=config.get("medaka_model"),
+        batch_size=config.get("medaka_batch_size")
+    shell:
+        """
+        medaka stitch {input}/*.hdf {output}  > {log} 2>&1
         """
 
 
