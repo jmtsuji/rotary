@@ -10,7 +10,7 @@ import os
 
 from pungi.dataset import generate_dataset_from_fastq_directory, Dataset
 from pungi.run import setup_run_directory, run_snakemake_workflow, load_yaml_config, get_snakemake_args
-from pungi.sample import SequencingFile, LongReadSampleWithPairedPolishingShortReads
+from pungi.sample import SequencingFile, auto_create_sample_from_files
 from pungi.utils import get_cli_arg_path, get_cli_arg, check_for_files, get_config_path
 
 rotary_config_name = 'config.yaml'
@@ -86,17 +86,18 @@ def run_one(args):
     jobs = get_cli_arg(args, 'jobs')
     snakemake_args = get_snakemake_args(args)
 
-    sequencing_files = [SequencingFile(path) for path in [(get_cli_arg_path(args, 'long')),
-                                                          (get_cli_arg_path(args, 'left')),
-                                                          (get_cli_arg_path(args, 'right'))]]
+    sequencing_file_cli_paths = [get_cli_arg_path(args, file_type) for file_type in ['long', 'left', 'right']]
+    sequencing_files = [SequencingFile(path) for path in sequencing_file_cli_paths if path]
 
-    sample = LongReadSampleWithPairedPolishingShortReads(long_file=sequencing_files[0],
-                                                         short_file_left=sequencing_files[1],
-                                                         short_file_right=sequencing_files[2],
-                                                         # Don't do an identifier check on user-specified files.
-                                                         identifier_check=False,
-                                                         # Don't do integrity check on user-specified files.
-                                                         integrity_check=False)
+    if len(sequencing_files) in [1, 3]:
+        sample = auto_create_sample_from_files(*sequencing_files,
+                                               # Don't do an identifier check on user-specified files.
+                                               identifier_check=False,
+                                               # Don't do integrity check on user-specified files.
+                                               integrity_check=False)
+    else:
+        raise ValueError('There should either be one input sequencing file (long-read only) or three (hybrid '
+                         'sequencing)')
 
     dataset = Dataset(sample)
 
@@ -122,7 +123,12 @@ def init(args):
 
     input_path = get_cli_arg_path(args, 'input_dir')
 
-    dataset = generate_dataset_from_fastq_directory(input_path, expected_files_per_sample=3)
+    if get_cli_arg(args, 'no_short'):
+        expected_files_per_sample = 1
+    else:
+        expected_files_per_sample = 3
+
+    dataset = generate_dataset_from_fastq_directory(input_path, expected_files_per_sample=expected_files_per_sample)
 
     dataset.create_sample_tsv(output_dir_path, header=sample_tsv_header_fields)
 
@@ -155,7 +161,7 @@ def parse_cli():
     # Declare Run_One Sub-command
     run_one_help = """Runs the Rotary workflow on specified sequencing files"""
     parser_run_one = subparsers.add_parser('run_one', help=run_one_help)
-    parser_run_one.add_argument('-l', '--long', metavar='FASTQ',
+    parser_run_one.add_argument('-l', '--long', metavar='FASTQ', required=True,
                                 help='path to the Oxford Nanopore long-read .fastq(.gz) file')
     parser_run_one.add_argument('-r1', '--left', metavar='FASTQ',
                                 help='path to the left Illumina short-read .fastq(.gz) file')
@@ -188,6 +194,8 @@ def parse_cli():
                              help='path to a directory containing Oxford Nanopore long-read and Illumina short-read .fastq(.gz) files')
     parser_init.add_argument('-f', '--force', action='store_true',
                              help="override existing run configuration files.")
+    parser_init.add_argument('-ns', '--no_short', action='store_true',
+                             help="do not search for short read files")
     parser_init.set_defaults(init=True)
     return parser
 
