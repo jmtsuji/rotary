@@ -42,33 +42,74 @@ rule map_long_reads_for_medaka:
         mini_align -i {input.qc_long_reads} -r {input.contigs} -m -p {params.output_base_name} -t {threads} > {log} 2>&1
         """
 
-rule polish_medaka:
+checkpoint generate_contig_files:
     input:
-        calls_to_draft_bam ='{sample}/{step}/medaka/calls_to_draft.bam',
-        calls_to_draft_bam_index='{sample}/{step}/medaka/calls_to_draft.bam.bai',
-        contigs="{sample}/{step}/medaka_input/{sample}_input.fasta"
+        "{sample}/{step}/medaka_input/{sample}_input.fasta"
     output:
         directory("{sample}/{step}/medaka/results")
     conda:
         "../envs/medaka.yaml"
     log:
-        "{sample}/logs/{step}/medaka.log"
+        "{sample}/logs/{step}/contig_names_medaka.log"
     benchmark:
         "{sample}/benchmarks/{step}/medaka.txt"
+    shell:
+        """
+        mkdir -p {output}
+        seqkit seq -n {input} | parallel 'touch {output}/{wildcards.sample}_{{}}' 2>> {log}
+        """
+
+rule polish_contig_medaka:
+    input:
+        calls_to_draft_bam='{sample}/{step}/medaka/calls_to_draft.bam',
+        calls_to_draft_bam_index='{sample}/{step}/medaka/calls_to_draft.bam.bai',
+        medaka_results_dir='{sample}/{step}/medaka/results',
+        contig_name='{sample}/{step}/medaka/results/{sample}_{contig}'
+    output:
+        contig_polished='{sample}/{step}/medaka/results/{sample}_{contig}.hd5'
+    conda:
+        "../envs/medaka.yaml"
+    log:
+        "{sample}/logs/{step}/medaka_{sample}_{contig}.log"
+    benchmark:
+        "{sample}/benchmarks/{step}/medaka_{sample}_{contig}.txt"
     params:
         medaka_model=config.get("medaka_model"),
         batch_size=config.get("medaka_batch_size")
     threads:
-        round(config.get("threads",1) / 2)
+        2
     shell:
         """
-        mkdir -p {output}
-        seqkit seq -n {input.contigs} | parallel -k -j {threads} 'medaka consensus {input.calls_to_draft_bam} {output}/{{}}.hdf --model {params.medaka_model} --batch {params.batch_size} --threads 2 --region {{}}' > {log} 2>&1
+        medaka consensus {input.calls_to_draft_bam} \
+          {input.medaka_results_dir}/{wildcards.sample}_{wildcards.contig}.hd5 \
+          --model {params.medaka_model} \
+          --batch {params.batch_size} \
+          --threads {threads} \
+          --region {wildcards.contig} > {log} 2>&1
         """
+
+def aggregate_medaka_polished_contigs(wildcards):
+    """
+    Callback function that generates a list contig HDF5 files that will be needed for rule stitch_medaka.
+
+    :param wildcards: These are the wildcards present in rule stich_medaka.
+    :return: HDF5 files to be generated for each contig by multiple executions of rule polish_contig_medaka.
+    """
+    # Force execution of checkpoint generate_contig_files. This should take the input assembly,
+    # generate a series of stub files representing each contig and then revaluate the DAG.
+    # Wildcards from rule stitch_medaka are passed to checkpoint generate_contig_files.
+    checkpoints.generate_contig_files.get(**wildcards)
+
+    # Uses the names of the stub files to get the names of the contig files.
+    contigs_names = glob_wildcards(f"{wildcards.sample}/{wildcards.step}/medaka/results/{wildcards.sample}_{{contig}}").contig
+
+    # Returns the expected paths to the per-contig HDF5 files.
+    return expand("{sample}/{step}/medaka/results/{sample}_{contig}.hd5",sample=wildcards.sample,
+        step=wildcards.step,contig=contigs_names)
 
 rule stitch_medaka:
     input:
-        hdf5_dir="{sample}/{step}/medaka/results",
+        hdf5s=aggregate_medaka_polished_contigs,
         draft_fasta="{sample}/polish/medaka_input/{sample}_input.fasta"
     output:
         "{sample}/{step}/medaka/{sample}_consensus.fasta"
@@ -85,7 +126,7 @@ rule stitch_medaka:
         batch_size=config.get("medaka_batch_size")
     shell:
         """
-        medaka stitch --threads {threads} {input.hdf5_dir}/*.hdf {input.draft_fasta} {output} > {log} 2>&1
+        medaka stitch --threads {threads} {input.hdf5s} {input.draft_fasta} {output} > {log} 2>&1
         """
 
 
