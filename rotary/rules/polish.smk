@@ -42,11 +42,12 @@ rule map_long_reads_for_medaka:
         mini_align -i {input.qc_long_reads} -r {input.contigs} -m -p {params.output_base_name} -t {threads} > {log} 2>&1
         """
 
-checkpoint generate_contig_files:
+checkpoint generate_contig_manifest:
     input:
         "{sample}/{step}/medaka_input/{sample}_input.fasta"
     output:
-        directory("{sample}/{step}/medaka/results")
+        contig_manifest="{sample}/{step}/medaka/results/{sample}_contigs.txt",
+        medaka_results_dir=directory('{sample}/{step}/medaka/results')
     conda:
         "../envs/medaka.yaml"
     log:
@@ -55,8 +56,7 @@ checkpoint generate_contig_files:
         "{sample}/benchmarks/{step}/medaka.txt"
     shell:
         """
-        mkdir -p {output}
-        seqkit seq -n {input} | parallel 'touch {output}/{wildcards.sample}_{{}}' 2>> {log}
+        seqkit seq -n {input} > {output.contig_manifest} 2>> {log}
         """
 
 rule polish_contig_medaka:
@@ -64,7 +64,7 @@ rule polish_contig_medaka:
         calls_to_draft_bam='{sample}/{step}/medaka/calls_to_draft.bam',
         calls_to_draft_bam_index='{sample}/{step}/medaka/calls_to_draft.bam.bai',
         medaka_results_dir='{sample}/{step}/medaka/results',
-        contig_name='{sample}/{step}/medaka/results/{sample}_{contig}'
+        contig_manifest="{sample}/{step}/medaka/results/{sample}_contigs.txt"
     output:
         contig_polished='{sample}/{step}/medaka/results/{sample}_{contig}.hd5'
     conda:
@@ -95,15 +95,15 @@ def aggregate_medaka_polished_contigs(wildcards):
     :param wildcards: These are the wildcards present in rule stich_medaka.
     :return: HDF5 files to be generated for each contig by multiple executions of rule polish_contig_medaka.
     """
-    # Force execution of checkpoint generate_contig_files. This should take the input assembly,
-    # generate a series of stub files representing each contig and then revaluate the DAG.
-    # Wildcards from rule stitch_medaka are passed to checkpoint generate_contig_files.
-    checkpoints.generate_contig_files.get(**wildcards)
+    # Force execution of checkpoint generate_contig_files.
+    # This will generate a contig manifest file and revaluate the DAG.
+    contig_manifest_path = checkpoints.generate_contig_manifest.get(**wildcards).output[0]
 
-    # Uses the names of the stub files to get the names of the contig files.
-    contigs_names = glob_wildcards(f"{wildcards.sample}/{wildcards.step}/medaka/results/{wildcards.sample}_{{contig}}").contig
+    # Open the resulting contig manifest file and read in the contig names.
+    with contig_manifest_path.open() as contig_file:
+        contigs_names = [line.strip() for line in contig_file]
 
-    # Returns the expected paths to the per-contig HDF5 files.
+    # Returns the expected paths to the per-contig HDF5 polishing files.
     return expand("{sample}/{step}/medaka/results/{sample}_{contig}.hd5",sample=wildcards.sample,
         step=wildcards.step,contig=contigs_names)
 
