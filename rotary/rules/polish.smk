@@ -80,19 +80,36 @@ rule polish_contig_medaka:
         2
     shell:
         """
-        medaka consensus {input.calls_to_draft_bam} {input.medaka_results_dir}/{wildcards.sample}_{wildcards.contig}.hd5 \ 
-        --model {params.medaka_model} --batch {params.batch_size} --threads {threads} \
-        --region {wildcards.contig} > {log} 2>&1
+        medaka consensus {input.calls_to_draft_bam} \
+          {input.medaka_results_dir}/{wildcards.sample}_{wildcards.contig}.hd5 \
+          --model {params.medaka_model} \
+          --batch {params.batch_size} \
+          --threads {threads} \
+          --region {wildcards.contig} > {log} 2>&1
         """
 
-def aggregate_medaka_polished_contig_hdf5(wildcards):
-    checkpoints.generate_contig_files.get(sample=wildcards.sample, step=wildcards.step)
-    contigs_names = glob_wildcards(f"{wildcards.sample}/{wildcards.step}/medaka/results/{wildcards.sample}_{{contig}}.hd5").contig
-    return expand(f"{wildcards.sample}/{wildcards.step}/medaka/results/{wildcards.sample}_{{contig}}.hd5", id=contigs_names)
+def aggregate_medaka_polished_contigs(wildcards):
+    """
+    Callback function that generates a list contig HDF5 files that will be needed for rule stitch_medaka.
+
+    :param wildcards: These are the wildcards present in rule stich_medaka.
+    :return: HDF5 files to be generated for each contig by multiple executions of rule polish_contig_medaka.
+    """
+    # Force execution of checkpoint generate_contig_files. This should take the input assembly,
+    # generate a series of stub files representing each contig and then revaluate the DAG.
+    # Wildcards from rule stitch_medaka are passed to checkpoint generate_contig_files.
+    checkpoints.generate_contig_files.get(**wildcards)
+
+    # Uses the names of the stub files to get the names of the contig files.
+    contigs_names = glob_wildcards(f"{wildcards.sample}/{wildcards.step}/medaka/results/{wildcards.sample}_{{contig}}").contig
+
+    # Returns the expected paths to the per-contig HDF5 files.
+    return expand("{sample}/{step}/medaka/results/{sample}_{contig}.hd5",sample=wildcards.sample,
+        step=wildcards.step,contig=contigs_names)
 
 rule stitch_medaka:
     input:
-        hdf5s=aggregate_medaka_polished_contig_hdf5,
+        hdf5s=aggregate_medaka_polished_contigs,
         draft_fasta="{sample}/polish/medaka_input/{sample}_input.fasta"
     output:
         "{sample}/{step}/medaka/{sample}_consensus.fasta"
