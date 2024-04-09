@@ -401,9 +401,23 @@ rule symlink_polish:
         os.symlink(source_relpath_contig_info,str(output.contig_info))
 
 
+# TODO - this rule should eventually be moved to the circularization module,
+#  after a stats summary file is created for that module.
+rule add_contig_info_to_annotation_stats:
+    input:
+        "{sample}/polish/{sample}_contig_info.tsv"
+    output:
+        "{sample}/stats/{sample}_contig_info.tsv"
+    shell:
+        """
+        cp {input} {output}
+        """
+
+
 rule polish:
     input:
         expand("{sample}/polish/{sample}_polish.fasta",sample=SAMPLE_NAMES),
-        expand("{sample}/polish/{sample}_contig_info.tsv",sample=SAMPLE_NAMES)
+        expand("{sample}/polish/{sample}_contig_info.tsv",sample=SAMPLE_NAMES),
+        expand("{sample}/stats/{sample}_contig_info.tsv", sample=SAMPLE_NAMES)
     output:
         temp(touch("checkpoints/polish"))
