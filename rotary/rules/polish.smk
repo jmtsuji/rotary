@@ -62,8 +62,7 @@ checkpoint generate_contig_manifest:
 rule polish_contig_medaka:
     input:
         calls_to_draft_bam='{sample}/{step}/medaka/calls_to_draft.bam',
-        calls_to_draft_bam_index='{sample}/{step}/medaka/calls_to_draft.bam.bai',
-        contig_manifest="{sample}/{step}/medaka/{sample}_contigs.txt"
+        calls_to_draft_bam_index='{sample}/{step}/medaka/calls_to_draft.bam.bai'
     output:
         contig_polished=temp('{sample}/{step}/medaka/results/{sample}_{contig}.hd5')
     conda:
@@ -75,13 +74,11 @@ rule polish_contig_medaka:
     params:
         medaka_model=config.get("medaka_model"),
         batch_size=config.get("medaka_batch_size"),
-        medaka_results_dir='{sample}/{step}/medaka/results',
     threads:
         2
     shell:
         """
-        medaka consensus {input.calls_to_draft_bam} \
-          {params.medaka_results_dir}/{wildcards.sample}_{wildcards.contig}.hd5 \
+        medaka consensus {input.calls_to_draft_bam} {output.contig_polished} \
           --model {params.medaka_model} \
           --batch {params.batch_size} \
           --threads {threads} \
@@ -92,7 +89,7 @@ def aggregate_medaka_polished_contigs(wildcards):
     """
     Callback function that generates a list contig HDF5 files that will be needed for rule stitch_medaka.
 
-    :param wildcards: These are the wildcards present in rule stich_medaka.
+    :param wildcards: These are the wildcards present in rule stitch_medaka.
     :return: HDF5 files to be generated for each contig by multiple executions of rule polish_contig_medaka.
     """
     # Force execution of checkpoint generate_contig_files.
