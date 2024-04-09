@@ -46,8 +46,7 @@ checkpoint generate_contig_manifest:
     input:
         "{sample}/{step}/medaka_input/{sample}_input.fasta"
     output:
-        contig_manifest="{sample}/{step}/medaka/results/{sample}_contigs.txt",
-        medaka_results_dir=directory('{sample}/{step}/medaka/results')
+        contig_manifest="{sample}/{step}/medaka/results/{sample}_contigs.txt"
     conda:
         "../envs/medaka.yaml"
     log:
@@ -63,10 +62,9 @@ rule polish_contig_medaka:
     input:
         calls_to_draft_bam='{sample}/{step}/medaka/calls_to_draft.bam',
         calls_to_draft_bam_index='{sample}/{step}/medaka/calls_to_draft.bam.bai',
-        medaka_results_dir='{sample}/{step}/medaka/results',
         contig_manifest="{sample}/{step}/medaka/results/{sample}_contigs.txt"
     output:
-        contig_polished='{sample}/{step}/medaka/results/{sample}_{contig}.hd5'
+        contig_polished=temp('{sample}/{step}/medaka/results/{sample}_{contig}.hd5')
     conda:
         "../envs/medaka.yaml"
     log:
@@ -75,13 +73,14 @@ rule polish_contig_medaka:
         "{sample}/benchmarks/{step}/medaka_{sample}_{contig}.txt"
     params:
         medaka_model=config.get("medaka_model"),
-        batch_size=config.get("medaka_batch_size")
+        batch_size=config.get("medaka_batch_size"),
+        medaka_results_dir='{sample}/{step}/medaka/results',
     threads:
         2
     shell:
         """
         medaka consensus {input.calls_to_draft_bam} \
-          {input.medaka_results_dir}/{wildcards.sample}_{wildcards.contig}.hd5 \
+          {params.medaka_results_dir}/{wildcards.sample}_{wildcards.contig}.hd5 \
           --model {params.medaka_model} \
           --batch {params.batch_size} \
           --threads {threads} \
