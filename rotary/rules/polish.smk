@@ -47,16 +47,14 @@ checkpoint generate_contig_manifest:
     input:
         "{sample}/{step}/medaka_input/{sample}_input.fasta"
     output:
-        contig_manifest="{sample}/{step}/medaka/{sample}_contigs.txt"
-    conda:
-        "../envs/medaka.yaml"
+        "{sample}/{step}/medaka/{sample}_contigs.txt"
     log:
         "{sample}/logs/{step}/contig_names_medaka.log"
     benchmark:
         "{sample}/benchmarks/{step}/medaka.txt"
     shell:
         """
-        seqkit seq -n {input} > {output.contig_manifest} 2>> {log}
+        grep '^>' {input} | cut -f1 -d' ' | tr -d '>' > {output} 2>> {log}
         """
 
 rule polish_contig_medaka:

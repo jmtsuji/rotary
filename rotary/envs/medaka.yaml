@@ -4,4 +4,3 @@ channels:
   - defaults
 dependencies:
   - medaka=1.8.0
-  - seqkit=2.8.0
