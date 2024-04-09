@@ -272,14 +272,19 @@ rule bypass_circularization:
         os.symlink(source_relpath,str(output))
 
 
-# Gets the names of all lists in circularize/filter/lists (should be either circular.list or linear.list or both)
-# Then outputs the expected paths of the finalized circular and linear FastA files
-# This function allows the DAG to figure out whether to run the circular / linear specific processing steps
-#   based on the split_circular_and_linear_contigs checkpoint made earlier.
+
 def aggregate_contigs(wildcards):
-    # TODO - I do not further use this variable, but checkpoints needs to be called to trigger the checkpoint.
-    # Am I doing something wrong?
-    checkpoint_output = checkpoints.split_circular_and_linear_contigs.get(**wildcards).output[0]
+    """
+    Gets the names of all lists in circularize/filter/lists (should be either circular.list or linear.list or both)
+    Then outputs the expected paths of the finalized circular and linear FastA files
+    This function allows the DAG to figure out whether to run the circular / linear specific processing steps
+    based on the split_circular_and_linear_contigs checkpoint made earlier.
+    """
+    # Force execution of checkpoint split_circular_and_linear_contigs.
+    # Passes wildcards from rule combine_circular_and_linear_contigs to split_circular_and_linear_contigs.
+    # Execution will generate a lists of linear and circular contigs and revaluate the DAG.
+    checkpoints.split_circular_and_linear_contigs.get(**wildcards)
+
     circularize_lists_path = f"{wildcards.sample}/circularize/filter/lists"
 
     return expand("{{sample}}/circularize/combine/{{sample}}_{circular_or_linear}.fasta",
