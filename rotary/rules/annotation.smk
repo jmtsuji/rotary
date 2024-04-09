@@ -17,8 +17,8 @@ VERSION_IPR5=VERSION_IPR5_MAJOR + '_' + VERSION_IPR5_MINOR
 
 DB_DIR_PATH = config.get('db_dir')
 
-IPR5_MD5_URL=f'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}/interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}-64-bit.tar.gz.md5'
-IPR5_URL=f'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}/interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}-64-bit.tar.gz '
+IPR5_URL=f'http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}/interproscan-{VERSION_IPR5_MAJOR}-{VERSION_IPR5_MINOR}-64-bit.tar.gz'
+IPR5_MD5_URL = IPR5_URL + '.md5'
 
 KEEP_BAM_FILES=is_config_parameter_true(config,'keep_final_coverage_bam_files')
 RUN_EGGNOG=is_config_parameter_true(config,'run_eggnog')
