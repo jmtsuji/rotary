@@ -15,10 +15,11 @@ rule prepare_medaka_polish_input:
     input:
         "{sample}/assembly/{sample}_assembly.fasta"
     output:
-        temp("{sample}/polish/medaka_input/{sample}_input.fasta")
+        fasta=temp("{sample}/polish/medaka_input/{sample}_input.fasta"),
+        fasta_dir=temp(directory("{sample}/polish/medaka_input/"))
     run:
-        source_relpath = os.path.relpath(str(input),os.path.dirname(str(output)))
-        os.symlink(source_relpath,str(output))
+        source_relpath = os.path.relpath(str(input),os.path.dirname(str(output.fasta)))
+        os.symlink(source_relpath,str(output.fasta))
 
 rule map_long_reads_for_medaka:
     input:
@@ -46,7 +47,7 @@ checkpoint generate_contig_manifest:
     input:
         "{sample}/{step}/medaka_input/{sample}_input.fasta"
     output:
-        contig_manifest="{sample}/{step}/medaka/results/{sample}_contigs.txt"
+        contig_manifest="{sample}/{step}/medaka/{sample}_contigs.txt"
     conda:
         "../envs/medaka.yaml"
     log:
@@ -62,7 +63,7 @@ rule polish_contig_medaka:
     input:
         calls_to_draft_bam='{sample}/{step}/medaka/calls_to_draft.bam',
         calls_to_draft_bam_index='{sample}/{step}/medaka/calls_to_draft.bam.bai',
-        contig_manifest="{sample}/{step}/medaka/results/{sample}_contigs.txt"
+        contig_manifest="{sample}/{step}/medaka/{sample}_contigs.txt"
     output:
         contig_polished=temp('{sample}/{step}/medaka/results/{sample}_{contig}.hd5')
     conda:
@@ -95,7 +96,8 @@ def aggregate_medaka_polished_contigs(wildcards):
     :return: HDF5 files to be generated for each contig by multiple executions of rule polish_contig_medaka.
     """
     # Force execution of checkpoint generate_contig_files.
-    # This will generate a contig manifest file and revaluate the DAG.
+    # Passes wildcards from rule stitch_medaka to generate_contig_files.
+    # Execution will generate a contig manifest file and revaluate the DAG.
     contig_manifest_path = checkpoints.generate_contig_manifest.get(**wildcards).output[0]
 
     # Open the resulting contig manifest file and read in the contig names.
@@ -109,6 +111,7 @@ def aggregate_medaka_polished_contigs(wildcards):
 rule stitch_medaka:
     input:
         hdf5s=aggregate_medaka_polished_contigs,
+        draft_fasta_dir="{sample}/polish/medaka_input/",
         draft_fasta="{sample}/polish/medaka_input/{sample}_input.fasta"
     output:
         "{sample}/{step}/medaka/{sample}_consensus.fasta"
