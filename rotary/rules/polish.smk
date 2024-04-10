@@ -54,7 +54,7 @@ checkpoint generate_contig_manifest:
         "{sample}/benchmarks/{step}/medaka.txt"
     shell:
         """
-        grep '^>' {input} | cut -f1 -d' ' | tr -d '>' > {output} 2>> {log}
+        (grep '^>' {input} | cut -f1 -d' ' | tr -d '>' > {output}) 2> {log}
         """
 
 rule polish_contig_medaka:
@@ -106,6 +106,8 @@ def aggregate_medaka_polished_contigs(wildcards):
 rule stitch_medaka:
     input:
         hdf5s=aggregate_medaka_polished_contigs,
+        # draft_fasta_dir added as input so that this dir, declared temp() in prepare_medaka_polish_input,
+        # is maintained until after medaka polishing is complete.
         draft_fasta_dir="{sample}/polish/medaka_input/",
         draft_fasta="{sample}/polish/medaka_input/{sample}_input.fasta"
     output:
