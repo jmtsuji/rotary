@@ -15,37 +15,115 @@ rule prepare_medaka_polish_input:
     input:
         "{sample}/assembly/{sample}_assembly.fasta"
     output:
-        temp("{sample}/polish/medaka_input/{sample}_input.fasta")
+        fasta=temp("{sample}/polish/medaka_input/{sample}_input.fasta"),
+        fasta_dir=temp(directory("{sample}/polish/medaka_input/"))
     run:
-        source_relpath = os.path.relpath(str(input),os.path.dirname(str(output)))
-        os.symlink(source_relpath,str(output))
+        source_relpath = os.path.relpath(str(input),os.path.dirname(str(output.fasta)))
+        os.symlink(source_relpath,str(output.fasta))
 
-
-rule polish_medaka:
+rule map_long_reads_for_medaka:
     input:
         qc_long_reads="{sample}/qc/{sample}_qc_long.fastq.gz",
         contigs="{sample}/{step}/medaka_input/{sample}_input.fasta"
     output:
-        dir=directory("{sample}/{step}/medaka"),
-        contigs="{sample}/{step}/medaka/{sample}_consensus.fasta",
-        calls_to_draft=temp(multiext("{sample}/{step}/medaka/calls_to_draft", '.bam', '.bam.bai')),
-        consensus_probs=temp("{sample}/{step}/medaka/consensus_probs.hdf")
+        calls_to_draft_bam=temp('{sample}/{step}/medaka/calls_to_draft.bam'),
+        calls_to_draft_bam_index=temp('{sample}/{step}/medaka/calls_to_draft.bam.bai')
     conda:
         "../envs/medaka.yaml"
     log:
-        "{sample}/logs/{step}/medaka.log"
+        "{sample}/logs/{step}/map_long_reads_medaka.log"
+    benchmark:
+        "{sample}/benchmarks/{step}/map_long_reads_medaka.txt"
+    threads:
+        config.get("threads",1)
+    params:
+        output_base_name='{sample}/{step}/medaka/calls_to_draft'
+    shell:
+        """
+        mini_align -i {input.qc_long_reads} -r {input.contigs} -m -p {params.output_base_name} -t {threads} > {log} 2>&1
+        """
+
+checkpoint generate_contig_manifest:
+    input:
+        "{sample}/{step}/medaka_input/{sample}_input.fasta"
+    output:
+        "{sample}/{step}/medaka/{sample}_contigs.txt"
+    log:
+        "{sample}/logs/{step}/contig_names_medaka.log"
     benchmark:
         "{sample}/benchmarks/{step}/medaka.txt"
+    shell:
+        """
+        grep '^>' {input} | cut -f1 -d' ' | tr -d '>' > {output} 2>> {log}
+        """
+
+rule polish_contig_medaka:
+    input:
+        calls_to_draft_bam='{sample}/{step}/medaka/calls_to_draft.bam',
+        calls_to_draft_bam_index='{sample}/{step}/medaka/calls_to_draft.bam.bai'
+    output:
+        contig_polished=temp('{sample}/{step}/medaka/results/{sample}_{contig}.hd5')
+    conda:
+        "../envs/medaka.yaml"
+    log:
+        "{sample}/logs/{step}/medaka_{sample}_{contig}.log"
+    benchmark:
+        "{sample}/benchmarks/{step}/medaka_{sample}_{contig}.txt"
+    params:
+        medaka_model=config.get("medaka_model"),
+        batch_size=config.get("medaka_batch_size"),
+    threads:
+        2
+    shell:
+        """
+        medaka consensus {input.calls_to_draft_bam} {output.contig_polished} \
+          --model {params.medaka_model} \
+          --batch {params.batch_size} \
+          --threads {threads} \
+          --region {wildcards.contig} > {log} 2>&1
+        """
+
+def aggregate_medaka_polished_contigs(wildcards):
+    """
+    Callback function that generates a list contig HDF5 files that will be needed for rule stitch_medaka.
+
+    :param wildcards: These are the wildcards present in rule stitch_medaka.
+    :return: HDF5 files to be generated for each contig by multiple executions of rule polish_contig_medaka.
+    """
+    # Force execution of checkpoint generate_contig_files.
+    # Passes wildcards from rule stitch_medaka to generate_contig_files.
+    # Execution will generate a contig manifest file and revaluate the DAG.
+    contig_manifest_path = checkpoints.generate_contig_manifest.get(**wildcards).output[0]
+
+    # Open the resulting contig manifest file and read in the contig names.
+    with contig_manifest_path.open() as contig_file:
+        contigs_names = [line.strip() for line in contig_file]
+
+    # Returns the expected paths to the per-contig HDF5 polishing files.
+    return expand("{sample}/{step}/medaka/results/{sample}_{contig}.hd5",sample=wildcards.sample,
+        step=wildcards.step,contig=contigs_names)
+
+rule stitch_medaka:
+    input:
+        hdf5s=aggregate_medaka_polished_contigs,
+        draft_fasta_dir="{sample}/polish/medaka_input/",
+        draft_fasta="{sample}/polish/medaka_input/{sample}_input.fasta"
+    output:
+        "{sample}/{step}/medaka/{sample}_consensus.fasta"
+    conda:
+        "../envs/medaka.yaml"
+    log:
+        "{sample}/logs/{step}/medaka_stich.log"
+    benchmark:
+        "{sample}/benchmarks/{step}/medaka_stich.txt"
+    threads:
+        config.get("threads",1)
     params:
         medaka_model=config.get("medaka_model"),
         batch_size=config.get("medaka_batch_size")
-    threads:
-        config.get("threads",1)
     shell:
         """
-        medaka_consensus -i {input.qc_long_reads} -d {input.contigs} -o {output.dir} \
-          -m {params.medaka_model} -t {threads} -b {params.batch_size} > {log} 2>&1
-        mv {output.dir}/consensus.fasta {output.contigs}
+        medaka stitch --threads {threads} {input.hdf5s} {input.draft_fasta} {output} > {log} 2>&1
         """
 
 
