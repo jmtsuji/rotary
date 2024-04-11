@@ -69,7 +69,7 @@ rule assembly_end_repair:
         mem=config.get("memory")
     shell:
         """
-        rotary-repair --long_read_filepath {input.qc_long_reads} \
+        rotary-utils repair --long_read_filepath {input.qc_long_reads} \
           --assembly_fasta_filepath {input.assembly} \
           --assembly_info_filepath {input.info} \
           --output_dir {output.output_dir} \

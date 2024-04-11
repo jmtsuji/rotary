@@ -5,25 +5,27 @@
 [![GitHub release](https://img.shields.io/badge/Version-0.2.0--beta4-lightgrey.svg)](https://github.com/jmtsuji/rotary/releases)
 [![DOI](https://zenodo.org/badge/473891963.svg)](https://zenodo.org/badge/latestdoi/473891963)
 
-Utilities and workflow for long-read DNA assemblies including circular elements
+Scalable workflow for long-read DNA assemblies including circular elements
 
 ## Quick start
 
 ### Install
 ```bash
 git clone https://github.com/rotary-genomics/rotary.git
+git clone https://github.com/rotary-genomics/rotary-utils.git
 git clone https://github.com/rotary-genomics/pungi.git
 
-conda env create -n rotary --file=rotary/enviroment.yaml
+conda env create -n rotary --file=rotary/environment.yml
 
 conda activate rotary
 
-cd pungi
+cd rotary-utils
+pip install --editable .
 
+cd ../pungi
 pip install --editable .
 
 cd ../rotary
-
 pip install --editable .
 ```
 
@@ -40,31 +42,23 @@ rotary run_one -l s1_long.fastq.gz -r1 s1_R1.fastq.gz -r2 s1_R2.fastq.gz -d ../r
 
 ## Description
 
-_rotary_, currently under development, comprises a suite of utilities for accurately assembling circular DNA 
-elements, such as prokaryotic chromosomes and plasmids. It features a scalable Snakemake workflow designed to assemble 
-single microbial genomes according to "best practices". Each rotary utility executes subsections of the 
-overarching _rotary_ workflow, acting as standalone tools that can be incorporated into other software. Once completed,
-these utilities are intended to serve as a modern replacement for [circlator](https://github.com/sanger-pathogens/circlator), 
-which is now in a frozen development state. The _rotary_ genome assembly pipeline and utilities can accommodate 
-standalone Nanopore data<sup>[1](#Footnotes)</sup> or hybrid Nanopore + short-read data. The pipeline uses a 
-long-read assembly first approach with optional contig polishing using short-reads. It performs short-read QC, 
-short-read decontamination, long-read QC, assembly, end repair, polishing, contig rotation, and genome annotation.
-
-### Use cases for _rotary_
-We envision two possible ways that _rotary_ can be used:
-- As a stand-alone genome assembly workflow for analyzing long-read microbial genome data with best practices regarding 
-  DNA element circularization.
-- As a suite of utilities that can be integrated into custom genome assembly workflows to ensure circular DNA/RNA elements 
-  are assembled accurately, similar to how circlator is currently used.
+_rotary_ is a scalable Snakemake workflow for long read-based microbial genome assembly. The workflow integrates best
+practices for assembling circular DNA elements, including prokaryotic chromosomes and plasmids, and is intended for use
+with single microbial genomes. _rotary_ can accommodate standalone Nanopore data<sup>[1](#Footnotes)</sup> or hybrid
+Nanopore + short-read data. A long-read assembly first approach is used, and short reads (if supplied) are used for
+contig polishing. The pipeline performs short-read QC, short-read decontamination, long-read QC, assembly, end repair,
+polishing, contig rotation, and genome annotation. Best practices for handling common issues with circular DNA sequences
+are performed with help from [_rotary-utils_](https://github.com/rotary-genomics/rotary-utils), which can also be used
+as a standalone tool.
 
 ### Some advantages of using the _rotary_ assembly workflow:
 
 **Ease and reproducibility**
-- All databases auto-install, so you can start analyzing genomes reproducibly with limited effort!
+- All databases auto-install, so you can start analyzing genomes reproducibly with limited effort
 - Multiple genomes can be analyzed in parallel with high throughput
 - Snakemake checkpointing allows you to restart a failed run from where you left off
 
-**Best practices for genome circularization**
+**Best practices for genome circularization (via _rotary-utils_)**
 - Circularization is handled fairly carefully: unlike the defaults in most pipelines, _rotary_ fixes the
   [short gap region](https://github.com/fenderglass/Flye/issues/315#issuecomment-720679812) that can occur at the ends
   of circular contigs produced by Flye
@@ -77,13 +71,6 @@ We envision two possible ways that _rotary_ can be used:
 - Annotation pipeline includes gene annotation, GTDB taxonomy prediction, and completeness and contamination estimation
 
 ## Requirements
-
-### Utilities
-- OS: Runs on Linux (tested on Ubuntu 20.04 and Ubuntu 22.04) - we hope to support macOS in the future
-- Software: requires `miniconda` or manual installation using the dependencies shown in `rotary/enviroment.yaml`
-- Resources: should run on a modern laptop with >=8 GB RAM and >=4 CPU threads in most cases
-
-### Workflow
 - OS: Runs on Linux (tested on Ubuntu 20.04 and Ubuntu 22.04)
 - Software: requires `miniconda`
 - Resources: The majority of the pipeline is not too resource intensive. The limiting factors are:
@@ -98,16 +85,26 @@ We envision two possible ways that _rotary_ can be used:
 
 ### Install rotary
 ```bash
-git clone https://github.com/jmtsuji/rotary.git
-conda env create -n rotary --file=rotary/enviroment.yaml
+git clone https://github.com/rotary-genomics/rotary.git
+git clone https://github.com/rotary-genomics/rotary-utils.git
+git clone https://github.com/rotary-genomics/pungi.git
+
+conda env create -n rotary --file=rotary/environment.yml
+
 conda activate rotary
-cd rotary
+
+cd rotary-utils
+pip install --editable .
+
+cd ../pungi
+pip install --editable .
+
+cd ../rotary
 pip install --editable .
 ```
-This install takes around 5 minutes on a 8-thread laptop.
+This install takes around 5 minutes on an 8-thread laptop.
 
-### Use case 1: run the genome assembly workflow
-#### Method 1: run one sample
+### Usage method 1: run one sample
 
 ```bash
 mkdir output_dir
@@ -120,7 +117,7 @@ rotary run_one -l s1_long.fastq.gz -r1 s1_R1.fastq.gz -r2 s1_R2.fastq.gz -d ../r
 **Note**: If you are using older nanopore flow cells you should stop the run, modify the config file 
 (see **Advanced Usage** below) and restart the run using the `rotary run` command.
 
-#### Method 2: run multiple samples
+### Usage method 2: run multiple samples
 
 Rotary can target a directory containing numerous FASTQ files derived from various samples.
 It automatically organizes these files into sets corresponding to each sample and constructs a project 
@@ -139,12 +136,7 @@ rotary run
 ```
 See "Advanced usage of the assembly workflow" below for how to edit run settings and for other info.
 
-### Use case 2: use individual rotary utilities
-Currently available utilities:
-- `rotary-repair`: run on the outputs of Flye to repair any possible gaps/overlaps on the ends of circular contigs.
-  After installation, run `rotary-repair -h` to see a full list of commands for this utility.
-
-## Advanced usage of the assembly workflow
+## Advanced usage
 
 ### Modifying the config (YAML) file (`config.yaml`).
 
@@ -264,14 +256,17 @@ Some of the key output files that will be generated in the `ecoli` dir are:
 
 ## Citation
 
-_rotary_ is currently described in the methods of a bioRxiv pre-print. Please cite this pre-print if you use _rotary_:
-> Tsuji JM, Shaw NA, Nagashima S, Venkiteswaran JJ, Schiff SL, Watanabe T, Fukui M, Hanada S, Tank M, Neufeld JD (2023).
-> Anoxygenic phototrophic _Chloroflexota_ member uses a Type I reaction center. _bioRxiv_, DOI:10.1101/2020.07.07.190934
+An early version of _rotary_ is described in the methods and supplementary information of the following paper.
+Please cite this paper if you use _rotary_:
+> Tsuji JM, Shaw NA, Nagashima S, Venkiteswaran JJ, Schiff SL, Watanabe T, Fukui M, Hanada S, Tank M, Neufeld JD (2024).
+> Anoxygenic phototroph of the Chloroflexota uses a type I reaction center. Nature 627, 915–922 (2024).
+> https://doi.org/10.1038/s41586-024-07180-y
 
 ## Final comments
 
-Enjoy! I hope to continue to update/improve this pipeline (and remove some of the below caveats) over time, but for now,
-please feel free to use this basic working version.
+_rotary_ is under active development, so expect frequent updates (that will remove some of the below caveats).
+For stable performance, we recommend to use rotary versions in the
+[Releases](https://github.com/rotary-genomics/rotary/releases) page.
 
 ## Appendix
 
@@ -286,7 +281,7 @@ please feel free to use this basic working version.
    [circlator](https://github.com/sanger-pathogens/circlator) workflow)
 6. Polish contigs using long reads via [medaka](https://github.com/nanoporetech/medaka)
 7. If short reads are provided, polishes using [Polypolish](https://github.com/rrwick/Polypolish)
-   and [POLCA](https://github.com/alekseyzimin/masurca)
+   and [pypolca](https://github.com/gbouras13/pypolca)
 8. Filters resulting contigs by a user-provided coverage threshold
 9. Rotates any circular contigs to start at a marker gene of your choice (_dnaA_ by default), with help from
    [circlator](https://github.com/sanger-pathogens/circlator) (will be replaced by custom utilities in future releases)
@@ -294,7 +289,7 @@ please feel free to use this basic working version.
     Polypolish (if short reads were provided) or medaka (if only long reads were provided)
 11. Gene prediction via [DFAST](https://github.com/nigyta/dfast_core)
 12. Functional and taxonomic annotation via [EggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)
-    and [GTDB-Tk](https://github.com/Ecogenomics/GTDBTk)
+    and [GTDB-Tk](https://github.com/Ecogenomics/GTDBTk), along with other annotation methods.
 
 ### Known issues
 

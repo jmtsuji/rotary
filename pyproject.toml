@@ -1,10 +1,9 @@
 [project]
 name = "Rotary"
 version = "0.3.0-beta1"
-description = """Rotary is a bioinformatics toolkit and scalable hybrid assembly workflow for generating refined
-assemblies of circular prokaryotic genomes. It contains modules addressing common issues with circular assemblies.
-The snakemake-based pipeline integrates these modules and implements best practices for hybrid short/long-read microbial
-genome assembly."""
+description = """Rotary is a scalable long-read assembly workflow for generating refined assemblies of circular
+prokaryotic genomes. The snakemake-based pipeline implements best practices for microbial genome assembly, using either
+hybrid short/long-read data or long read-only data as input, and addresses common issues with circular assemblies."""
 authors = [
     {name = "Jackson M. Tsuji"},
     {name = "Lee H. Bergstrand"}
@@ -29,7 +28,6 @@ build-backend = "setuptools.build_meta"
 
 [project.scripts]
 rotary = "rotary.rotary:main"
-rotary-repair = "rotary.repair:main"
 
 [tool.setuptools]
 include-package-data = true
