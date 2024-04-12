@@ -59,8 +59,9 @@ checkpoint generate_contig_manifest:
 
 def generate_medaka_model_command(config):
     """
-    Generate the Medaka model command based on the contents of the config file.
-    Allows for 'auto' to be specified in the config to tell Medaka to determine base caller model based on input data.
+    Callback function that generates the Medaka model command based on parameters in the config file.
+    Allows for 'auto' to be specified for the medaka_model in the config.
+    Specifying 'auto' tells Medaka to determine the base caller version based on metadata in the input FASTA/BAM file.
 
     :param config: The configuration dictionary.
     :return: The Medaka model command.
