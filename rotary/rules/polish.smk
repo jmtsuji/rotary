@@ -57,6 +57,24 @@ checkpoint generate_contig_manifest:
         (grep '^>' {input} | cut -f1 -d' ' | tr -d '>' > {output}) 2> {log}
         """
 
+def generate_medaka_model_command(config):
+    """
+    Callback function that generates the Medaka model command based on parameters in the config file.
+    Allows for 'auto' to be specified for the medaka_model in the config.
+    Specifying 'auto' tells Medaka to determine the base caller version based on metadata in the input FASTA/BAM file.
+
+    :param config: The configuration dictionary.
+    :return: The Medaka model command.
+    """
+    model = config.get("medaka_model")
+
+    if model.lower() == 'auto':
+        model_command=''
+    else:
+        model_command=f"--model {model}"
+
+    return model_command
+
 rule polish_contig_medaka:
     input:
         calls_to_draft_bam='{sample}/{step}/medaka/calls_to_draft.bam',
@@ -70,14 +88,14 @@ rule polish_contig_medaka:
     benchmark:
         "{sample}/benchmarks/{step}/medaka_{sample}_{contig}.txt"
     params:
-        medaka_model=config.get("medaka_model"),
-        batch_size=config.get("medaka_batch_size"),
+        model_command=generate_medaka_model_command(config),
+        batch_size=config.get("medaka_batch_size")
     threads:
         2
     shell:
         """
         medaka consensus {input.calls_to_draft_bam} {output.contig_polished} \
-          --model {params.medaka_model} \
+          {params.model_command} \
           --batch {params.batch_size} \
           --threads {threads} \
           --region {wildcards.contig} > {log} 2>&1
