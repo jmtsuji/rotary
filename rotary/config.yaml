@@ -90,7 +90,10 @@ keep_unrepaired_contigs: 'True'
 ## Polishing
 # Model: set this parameter to match the flow cell version / basecalling model you used to generate the long reads.
 #        See details in the Medaka Github repo's "Models" section: https://github.com/nanoporetech/medaka#models
-medaka_model: "r1041_e82_400bps_hac_v4.2.0"
+#        One can specify either 'auto' to allow Medaka to pick the model based on input FASTQ file metadata or specify a
+#        specific model (e.g., "r1041_e82_400bps_hac_v4.2.0"). Specifying a specific model is necessary for older input
+#        FASTQ files that do not have base caller metadata.
+medaka_model: "auto"
 # Batch size: related to memory usage; can reduce if you get OOM (out of memory) errors
 medaka_batch_size: 100
 # Should the pipeline polish with short reads using Polypolish and pypolca?
