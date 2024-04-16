@@ -410,8 +410,8 @@ rule summarize_annotation:
         "{sample}/annotation/eggnog/{sample}.emapper.annotations" if ANNOTATION_MAP.eggnog else [],
         "{sample}/annotation/gtdbtk/{sample}_gtdbtk.summary.tsv" if ANNOTATION_MAP.gtdbtk else [],
         "{sample}/annotation/checkm/" if ANNOTATION_MAP.checkm2 else [],
-        "{{sample}}/annotation/coverage/{{sample}}_short_read_coverage.tsv" if ANNOTATION_MAP.coverage else [],
-        "{{sample}}/annotation/coverage/{{sample}}_long_read_coverage.tsv" if POLISH_WITH_SHORT_READS and ANNOTATION_MAP.coverage else [],
+        "{sample}/annotation/coverage/{sample}_short_read_coverage.tsv" if ANNOTATION_MAP.coverage else [],
+        "{sample}/annotation/coverage/{sample}_long_read_coverage.tsv" if POLISH_WITH_SHORT_READS and ANNOTATION_MAP.coverage else [],
         "{sample}/annotation/logs",
         "{sample}/annotation/stats"
     output:
