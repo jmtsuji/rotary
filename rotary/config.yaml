@@ -119,6 +119,10 @@ hmm_url: "https://ftp.ncbi.nlm.nih.gov/hmm/current/hmm_PGAP.HMM/TIGR02013.1.HMM"
 hmmsearch_evalue: 1e-40
 
 ## Annotation
+# Select Annotations: DFAST_Func (light annotation), EggNOG (heavy annotation including KEGG),
+# GTDBTk (taxonomy), CheckM2 (genome quality), coverage (read coverage statistics)
+annotations: ['DFAST_Func', 'EggNOG', 'GTDBTk', 'CheckM2', 'coverage']
+
 # GTDB-Tk phylogenetic placement mode:
 #    Set to "full_tree" to use the GTDB-Tk v1 method (needs ~320 GB RAM!)
 #    Otherwise, it will use the v2 phylogenetic placement method needing ~55 GB RAM.

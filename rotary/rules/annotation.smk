@@ -16,6 +16,35 @@ KEEP_BAM_FILES = is_config_parameter_true(config,'keep_final_coverage_bam_files'
 
 # SAMPLE_NAMES, and POLISH_WITH_SHORT_READS are instantiated in rotary.smk
 
+class AnnotationMap(object):
+    """
+    A class representing a map of the annotation software to be ran on the genome.
+    """
+    def __init__(self, annotations):
+        """
+        Initialize the object with the provided annotations.
+
+        Args:
+            annotations (list[str]): A list annotation software to be run.
+
+        Dynamic Attributes:
+            dfast_func (bool): True if 'dfast_func' annotation should be run, False otherwise.
+            eggnog (bool): True if 'eggnog' annotation should be run, False otherwise.
+            gtdbtk (bool): True if 'gtdbtk' annotation should be run, False otherwise.
+            checkm2 (bool): True if 'checkm2' annotation should be run, False otherwise.
+            coverage (bool): True if 'coverage' annotation should be run, False otherwise.
+        """
+        annotations_lower = [anno.lower() for anno in annotations]
+        expected_annotations = ['dfast_func', 'eggnog', 'gtdbtk', 'checkm2', 'coverage']
+
+        for current_annotation in expected_annotations:
+            if current_annotation in annotations_lower:
+                setattr(self, current_annotation, True)
+            else:
+                setattr(self, current_annotation, False)
+
+ANNOTATION_MAP = AnnotationMap(config.get('annotations'))
+
 rule download_dfast_db:
     output:
         db=directory(os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)),
@@ -172,7 +201,8 @@ rule run_dfast:
         "{sample}/benchmarks/annotation/annotation_dfast.txt"
     params:
         db=directory(os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)),
-        strain='{sample}'
+        strain='{sample}',
+        no_functional_annotation="--no_func_anno" if not ANNOTATION_MAP.dfast_func else ''
     threads:
         config.get("threads",1)
     shell:
@@ -183,6 +213,7 @@ rule run_dfast:
           -o {output.outdir} \
           --strain {params.strain} \
           --locus_tag_prefix {params.strain} \
+          {params.no_functional_annotation} \
           --cpu {threads} > {log} 2>&1
          # --complete t \
          # --seq_names "Chromosome,unnamed" \
@@ -376,11 +407,11 @@ rule symlink_logs:
 rule summarize_annotation:
     input:
         "{sample}/annotation/dfast/{sample}_genome.fna",
-        "{sample}/annotation/eggnog/{sample}.emapper.annotations",
-        "{sample}/annotation/gtdbtk/{sample}_gtdbtk.summary.tsv",
-        "{sample}/annotation/checkm/",
-        expand("{{sample}}/annotation/coverage/{{sample}}_{type}_coverage.tsv",
-            type=["short_read", "long_read"] if POLISH_WITH_SHORT_READS == True else ["long_read"]),
+        "{sample}/annotation/eggnog/{sample}.emapper.annotations" if ANNOTATION_MAP.eggnog else [],
+        "{sample}/annotation/gtdbtk/{sample}_gtdbtk.summary.tsv" if ANNOTATION_MAP.gtdbtk else [],
+        "{sample}/annotation/checkm/" if ANNOTATION_MAP.checkm2 else [],
+        "{{sample}}/annotation/coverage/{{sample}}_short_read_coverage.tsv" if ANNOTATION_MAP.coverage else [],
+        "{{sample}}/annotation/coverage/{{sample}}_long_read_coverage.tsv" if POLISH_WITH_SHORT_READS and ANNOTATION_MAP.coverage else [],
         "{sample}/annotation/logs",
         "{sample}/annotation/stats"
     output:
