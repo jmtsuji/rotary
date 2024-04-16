@@ -363,7 +363,7 @@ rule calculate_final_long_read_coverage:
 
 rule symlink_logs:
     input:
-        long_read_coverage="{sample}/annotation/coverage/{sample}_long_read_coverage.tsv",
+        dfast_genome="{sample}/annotation/dfast/{sample}_genome.fna"
     output:
         logs=temp(directory("{sample}/annotation/logs")),
         stats=temp(directory("{sample}/annotation/stats"))
