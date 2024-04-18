@@ -19,9 +19,11 @@ KEEP_BAM_FILES = is_config_parameter_true(config,'keep_final_coverage_bam_files'
 
 ANNOTATION_MAP = AnnotationMap(config.get('annotations'))
 
+DFAST_DB_PATH = os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)
+
 rule download_dfast_db:
     output:
-        db=directory(os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)),
+        db_dir=directory(DFAST_DB_PATH),
         install_finished=os.path.join(DB_DIR_PATH,"checkpoints","dfast_" + VERSION_DFAST)
     conda:
         "../envs/annotation_dfast.yaml"
@@ -29,13 +31,11 @@ rule download_dfast_db:
         "logs/download/dfast_db_download.log"
     benchmark:
         "benchmarks/download/dfast_db_download.txt"
-    params:
-        db_dir=os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)
     shell:
         """
-        mkdir -p {params.db_dir}
-        dfast_file_downloader.py --protein dfast --dbroot {params.db_dir} > {log} 2>&1
-        dfast_file_downloader.py --cdd Cog --hmm TIGR --dbroot {params.db_dir} >> {log} 2>&1
+        mkdir -p {output.db_dir}
+        dfast_file_downloader.py --protein dfast --dbroot {output.db_dir} > {log} 2>&1
+        dfast_file_downloader.py --cdd Cog --hmm TIGR --dbroot {output.db_dir} >> {log} 2>&1
         touch {output.install_finished}
         """
 
