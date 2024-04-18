@@ -156,7 +156,7 @@ rule download_checkm_db:
 rule run_dfast:
     input:
         contigs="{sample}/circularize/{sample}_circularize.fasta",
-        install_finished=os.path.join(DB_DIR_PATH,"checkpoints","dfast_" + VERSION_DFAST)
+        install_finished=os.path.join(DB_DIR_PATH,"checkpoints","dfast_" + VERSION_DFAST) if ANNOTATION_MAP.dfast_func else []
     output:
         dfast_genome="{sample}/annotation/dfast/{sample}_genome.fna",
         dfast_cds="{sample}/annotation/dfast/{sample}_cds.fna",
@@ -174,15 +174,15 @@ rule run_dfast:
     benchmark:
         "{sample}/benchmarks/annotation/annotation_dfast.txt"
     params:
-        db=directory(os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)),
         strain='{sample}',
-        no_functional_annotation="--no_func_anno" if not ANNOTATION_MAP.dfast_func else ''
+        no_functional_annotation="--no_func_anno" if not ANNOTATION_MAP.dfast_func else '',
+        dfast_db_root = f"--dbroot {DFAST_DB_PATH}" if ANNOTATION_MAP.dfast_func else ''
     threads:
         config.get("threads",1)
     shell:
         """
         dfast --force \
-          --dbroot {params.db} \
+          {params.dfast_db_root} \
           -g {input.contigs} \
           -o {output.outdir} \
           --strain {params.strain} \
