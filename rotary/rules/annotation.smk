@@ -3,6 +3,7 @@
 
 import os
 from pungi.utils import is_config_parameter_true
+from rotary.annotation import AnnotationMap
 
 VERSION_DFAST="1.2.18"
 VERSION_EGGNOG="5.0.0" # See http://eggnog5.embl.de/#/app/downloads
@@ -16,9 +17,13 @@ KEEP_BAM_FILES = is_config_parameter_true(config,'keep_final_coverage_bam_files'
 
 # SAMPLE_NAMES, and POLISH_WITH_SHORT_READS are instantiated in rotary.smk
 
+ANNOTATION_MAP = AnnotationMap(config.get('annotations'))
+
+DFAST_DB_PATH = os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)
+
 rule download_dfast_db:
     output:
-        db=directory(os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)),
+        db_dir=directory(DFAST_DB_PATH),
         install_finished=os.path.join(DB_DIR_PATH,"checkpoints","dfast_" + VERSION_DFAST)
     conda:
         "../envs/annotation_dfast.yaml"
@@ -26,13 +31,11 @@ rule download_dfast_db:
         "logs/download/dfast_db_download.log"
     benchmark:
         "benchmarks/download/dfast_db_download.txt"
-    params:
-        db_dir=os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)
     shell:
         """
-        mkdir -p {params.db_dir}
-        dfast_file_downloader.py --protein dfast --dbroot {params.db_dir} > {log} 2>&1
-        dfast_file_downloader.py --cdd Cog --hmm TIGR --dbroot {params.db_dir} >> {log} 2>&1
+        mkdir -p {output.db_dir}
+        dfast_file_downloader.py --protein dfast --dbroot {output.db_dir} > {log} 2>&1
+        dfast_file_downloader.py --cdd Cog --hmm TIGR --dbroot {output.db_dir} >> {log} 2>&1
         touch {output.install_finished}
         """
 
@@ -153,7 +156,7 @@ rule download_checkm_db:
 rule run_dfast:
     input:
         contigs="{sample}/circularize/{sample}_circularize.fasta",
-        install_finished=os.path.join(DB_DIR_PATH,"checkpoints","dfast_" + VERSION_DFAST)
+        install_finished=os.path.join(DB_DIR_PATH,"checkpoints","dfast_" + VERSION_DFAST) if ANNOTATION_MAP.dfast_func else []
     output:
         dfast_genome="{sample}/annotation/dfast/{sample}_genome.fna",
         dfast_cds="{sample}/annotation/dfast/{sample}_cds.fna",
@@ -171,18 +174,20 @@ rule run_dfast:
     benchmark:
         "{sample}/benchmarks/annotation/annotation_dfast.txt"
     params:
-        db=directory(os.path.join(DB_DIR_PATH,"dfast_" + VERSION_DFAST)),
-        strain='{sample}'
+        strain='{sample}',
+        no_functional_annotation="--no_func_anno" if not ANNOTATION_MAP.dfast_func else '',
+        dfast_db_root = f"--dbroot {DFAST_DB_PATH}" if ANNOTATION_MAP.dfast_func else ''
     threads:
         config.get("threads",1)
     shell:
         """
         dfast --force \
-          --dbroot {params.db} \
+          {params.dfast_db_root} \
           -g {input.contigs} \
           -o {output.outdir} \
           --strain {params.strain} \
           --locus_tag_prefix {params.strain} \
+          {params.no_functional_annotation} \
           --cpu {threads} > {log} 2>&1
          # --complete t \
          # --seq_names "Chromosome,unnamed" \
@@ -358,7 +363,7 @@ rule calculate_final_long_read_coverage:
 
 rule symlink_logs:
     input:
-        long_read_coverage="{sample}/annotation/coverage/{sample}_long_read_coverage.tsv",
+        dfast_genome="{sample}/annotation/dfast/{sample}_genome.fna"
     output:
         logs=temp(directory("{sample}/annotation/logs")),
         stats=temp(directory("{sample}/annotation/stats"))
@@ -376,11 +381,11 @@ rule symlink_logs:
 rule summarize_annotation:
     input:
         "{sample}/annotation/dfast/{sample}_genome.fna",
-        "{sample}/annotation/eggnog/{sample}.emapper.annotations",
-        "{sample}/annotation/gtdbtk/{sample}_gtdbtk.summary.tsv",
-        "{sample}/annotation/checkm/",
-        expand("{{sample}}/annotation/coverage/{{sample}}_{type}_coverage.tsv",
-            type=["short_read", "long_read"] if POLISH_WITH_SHORT_READS == True else ["long_read"]),
+        "{sample}/annotation/eggnog/{sample}.emapper.annotations" if ANNOTATION_MAP.eggnog else [],
+        "{sample}/annotation/gtdbtk/{sample}_gtdbtk.summary.tsv" if ANNOTATION_MAP.gtdbtk else [],
+        "{sample}/annotation/checkm/" if ANNOTATION_MAP.checkm2 else [],
+        "{sample}/annotation/coverage/{sample}_short_read_coverage.tsv" if POLISH_WITH_SHORT_READS and ANNOTATION_MAP.coverage else [],
+        "{sample}/annotation/coverage/{sample}_long_read_coverage.tsv" if ANNOTATION_MAP.coverage else [],
         "{sample}/annotation/logs",
         "{sample}/annotation/stats"
     output:
