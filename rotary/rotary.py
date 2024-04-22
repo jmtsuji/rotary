@@ -52,8 +52,8 @@ def run(args):
     :param args: The command-line arguments.
     """
     output_dir_path = get_cli_arg_path(args, 'output_dir')
-    # Check for the presence of the run configuration files in the output directory.
 
+    # Check for the presence of the run configuration files in the output directory.
     if not check_for_files(output_dir_path, run_files):
         raise FileNotFoundError(
             f'Missing run configuration files {run_files}, run either the run_one or init subcommands.')
