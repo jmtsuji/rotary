@@ -9,7 +9,8 @@ import argparse
 import os
 
 from pungi.dataset import generate_dataset_from_fastq_directory, Dataset
-from pungi.run import setup_run_directory, run_snakemake_workflow, load_yaml_config, get_snakemake_args
+from pungi.run import setup_run_directory, run_snakemake_workflow, load_yaml_config, get_snakemake_args, \
+    validate_yaml_config_against_default
 from pungi.sample import SequencingFile, auto_create_sample_from_files
 from pungi.utils import get_cli_arg_path, get_cli_arg, check_for_files, get_config_path
 
@@ -64,6 +65,8 @@ def run(args):
     config_path = get_config_path(args, default_config_path=os.path.join(output_dir_path, 'config.yaml'))
 
     config = load_yaml_config(config_path)
+    validate_yaml_config_against_default(config, default_config_path=provided_config_path)
+
     conda_env_dir = os.path.join(config['db_dir'], 'rotary_conda_envs')
 
     run_snakemake_workflow(config_path=config_path, snake_file_path=snake_file_path, output_dir_path=output_dir_path,
