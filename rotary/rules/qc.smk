@@ -349,6 +349,8 @@ rule finalize_qc_short:
         cp {input.short_r2} {output.short_final_r2}
         """
 
+
+
 rule qc_short:
     input:
         expand("{sample}/qc/{sample}_qc_R1.fastq.gz", sample=SAMPLE_NAMES),
@@ -356,9 +358,38 @@ rule qc_short:
     output:
         temp(touch("checkpoints/qc_short"))
 
+rule run_fastqc:
+    input:
+        nanopore_qc="{sample}/qc/long/{sample}_nanopore_qc.fastq.gz",
+        short_reformat=expand("{{sample}}/qc/short/{{sample}}_reformat_{direction}.fastq.gz", direction=['R1','R2']) if POLISH_WITH_SHORT_READS else [],
+        short_adapter_trim=expand("{{sample}}/qc/short/{{sample}}_adapter_trim_{direction}.fastq.gz", direction=['R1','R2']) if POLISH_WITH_SHORT_READS else [],
+        short_quality_trim=expand("{{sample}}/qc/short/{{sample}}_quality_trim_{direction}.fastq.gz", direction=['R1','R2']) if POLISH_WITH_SHORT_READS else [],
+        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz", direction=['R1','R2']) if POLISH_WITH_SHORT_READS else []
+    output:
+        directory("{sample}/qc/qc_stats")
+    conda:
+        "../envs/qc.yaml"
+    log:
+        "{sample}/logs/qc/qc_stats.log"
+    benchmark:
+        "{sample}/benchmarks/qc/short/qc_stats.txt"
+    threads:
+        config.get("threads", 1)
+    shell:
+        """
+        mkdir -p {output}
+        fastqc -o {output} -t {threads} {input} >{log} 2>&1
+        """
+
+rule qc_stats:
+    input:
+        expand("{sample}/qc/qc_stats",sample=SAMPLE_NAMES)
+    output:
+        temp(touch("checkpoints/qc_stats"))
 
 rule qc:
     input:
-        ["checkpoints/qc_long"] if POLISH_WITH_SHORT_READS == False else ["checkpoints/qc_long", "checkpoints/qc_short"]
+        qc=["checkpoints/qc_long"] if POLISH_WITH_SHORT_READS == False else ["checkpoints/qc_long", "checkpoints/qc_short"],
+        qc_stats="checkpoints/qc_stats"
     output:
         temp(touch("checkpoints/qc"))
