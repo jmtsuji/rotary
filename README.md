@@ -91,7 +91,7 @@ We envision two possible ways that _rotary_ can be used:
       (e.g., the human genome requires 148 GB). The decontaminating with large genomes step can be skipped 
        in most use cases.
     - Flye requires moderate RAM (e.g., < 64 GB for typical bacterial genome runs)
-    - GTDB-Tk v2 (with GTDB r214) needs ~55 GB RAM
+    - GTDB-Tk v2 (with GTDB r220) needs ~90 GB RAM
     - EggNOG-mapper is a bit slow (e.g., ~40 minutes on 40 CPU threads) and uses ~60-80 GB RAM paired in MMSeqs mode
 
 ## Usage
