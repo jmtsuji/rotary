@@ -2,7 +2,7 @@
 
 ![rotary-logo-full](https://github.com/rotary-genomics/rotary/assets/18713012/82296118-5964-4fc0-900c-ec3351f2c772)
 
-[![GitHub release](https://img.shields.io/badge/Version-0.2.0--beta4-lightgrey.svg)](https://github.com/jmtsuji/rotary/releases)
+[![GitHub release](https://img.shields.io/badge/Version-0.2.0--beta4-lightgrey.svg)](https://github.com/rotary-genomics/rotary/releases)
 [![DOI](https://zenodo.org/badge/473891963.svg)](https://zenodo.org/badge/latestdoi/473891963)
 
 Scalable workflow for long-read DNA assemblies including circular elements
@@ -48,7 +48,7 @@ with single microbial genomes. _rotary_ can accommodate standalone Nanopore data
 Nanopore + short-read data. A long-read assembly first approach is used, and short reads (if supplied) are used for
 contig polishing. The pipeline performs short-read QC, short-read decontamination, long-read QC, assembly, end repair,
 polishing, contig rotation, and genome annotation. Best practices for handling common issues with circular DNA sequences
-are performed with help from [_rotary-utils_](https://github.com/rotary-genomics/rotary-utils), which can also be used
+are performed with help from [_spokewrench_](https://github.com/rotary-genomics/spokewrench), which can also be used
 as a standalone tool.
 
 ### Some advantages of using the _rotary_ assembly workflow:
@@ -58,7 +58,7 @@ as a standalone tool.
 - Multiple genomes can be analyzed in parallel with high throughput
 - Snakemake checkpointing allows you to restart a failed run from where you left off
 
-**Best practices for genome circularization (via _rotary-utils_)**
+**Best practices for genome circularization (via [_spokewrench_](https://github.com/rotary-genomics/spokewrench))**
 - Circularization is handled fairly carefully: unlike the defaults in most pipelines, _rotary_ fixes the
   [short gap region](https://github.com/fenderglass/Flye/issues/315#issuecomment-720679812) that can occur at the ends
   of circular contigs produced by Flye
@@ -86,14 +86,14 @@ as a standalone tool.
 ### Install rotary
 ```bash
 git clone https://github.com/rotary-genomics/rotary.git
-git clone https://github.com/rotary-genomics/rotary-utils.git
+git clone https://github.com/rotary-genomics/spokewrench.git
 git clone https://github.com/rotary-genomics/pungi.git
 
 conda env create -n rotary --file=rotary/environment.yml
 
 conda activate rotary
 
-cd rotary-utils
+cd spokewrench
 pip install --editable .
 
 cd ../pungi
