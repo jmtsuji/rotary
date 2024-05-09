@@ -210,7 +210,7 @@ In addition, please check the following in each sample folder:
 
 ## Demo dataset for the assembly workflow
 
-As a simple demo, a hybrid sequencing dataset for an isolate of _E. coli_ (strain WG1) can be run through the main assembly  
+As a simple demo, a hybrid sequencing dataset for an isolate of _E. coli_ (strain WG1) can be run through the main assembly 
 portion of _rotary_ (excluding the annotation module, which requires DBs that take a long time to download) in less than 1 
 hour, on a 8-thread laptop with 16 GB RAM. (The demo will need about 10 GB of storage space.)
 
@@ -219,7 +219,7 @@ The dataset used for the test is publicly available in NCBI BioProject
 > Browning DF,  Hobman, JL,  Busby SJW. Laboratory strains of _Escherichia coli_ K-12: things are seldom what they seem. 
 > _Microbial Genomics_ __9__, mgen000922 (2023). https://doi.org/10.1099%2Fmgen.0.000922
 
-This demo dataset is not related to rotary at all, but it was a convenient choice due to the relatively compact dataset  
+This demo dataset is not related to rotary at all, but it was a convenient choice due to the relatively compact dataset 
 size and because it includes both long and short read data. (Thanks to the authors for making their data publicly available!) 
 Because the basecaller model used for the Nanopore data was not specified, the defaults for _rotary_ (SUP model) are used in 
 the test run below.
