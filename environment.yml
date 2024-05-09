@@ -9,3 +9,6 @@ dependencies:
   - mamba
   - wget
   - psutil=5.9.5
+  - pip
+  - pip:
+      - git+https://github.com/rotary-genomics/pungi@develop

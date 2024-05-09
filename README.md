@@ -12,17 +12,16 @@ Scalable workflow for long-read DNA assemblies including circular elements
 ### Install
 ```bash
 git clone https://github.com/rotary-genomics/rotary.git
-git clone https://github.com/rotary-genomics/pungi.git
 
 conda env create -n rotary --file=rotary/environment.yml
 
 conda activate rotary
 
-cd pungi
-pip install --editable .
-
 cd ../rotary
 pip install --editable .
+
+# See command line options
+rotary -h
 ```
 
 ### Run One Sample
@@ -80,11 +79,31 @@ as a standalone tool.
 ## Usage
 
 ### Install rotary
+Easy way:
+```bash
+git clone https://github.com/rotary-genomics/rotary.git
+
+conda env create -n rotary --file=rotary/environment.yml
+
+conda activate rotary
+
+cd rotary
+pip install --editable .
+```
+This install takes around 1-2 minutes on an 8-thread laptop with a smooth internet connection.
+
+Developer install: it can be helpful for developers to install pungi, the underlying library for working with
+snakefiles, in an editable configuration for coding work. To install pungi in this way, follow the modified install
+instructions below:
 ```bash
 git clone https://github.com/rotary-genomics/rotary.git
 git clone https://github.com/rotary-genomics/pungi.git
 
-conda env create -n rotary --file=rotary/environment.yml
+# Install using a modified conda env file that omits the automated pungi install
+cat rotary/environment.yml | \
+  sed '/- pip/d' | sed '/pungi/d' \
+  > developer_env.yml
+conda env create -n rotary --file=developer_env.yml
 
 conda activate rotary
 
@@ -93,8 +112,9 @@ pip install --editable .
 
 cd ../rotary
 pip install --editable .
+
+rm ../developer_env.yml
 ```
-This install takes around 5 minutes on an 8-thread laptop.
 
 ### Usage method 1: run one sample
 
