@@ -79,7 +79,8 @@ as a standalone tool.
 ## Usage
 
 ### Install rotary
-Easy way:
+
+#### Default install
 ```bash
 git clone https://github.com/rotary-genomics/rotary.git
 
@@ -92,7 +93,9 @@ pip install --editable .
 ```
 This install takes around 1-2 minutes on an 8-thread laptop with a smooth internet connection.
 
-Developer install: it can be helpful for developers to install pungi, the underlying library for working with
+#### Developer install 
+
+It can be helpful for developers to install pungi, the underlying library for working with
 snakefiles, in an editable configuration for coding work. To install pungi in this way, follow the modified install
 instructions below:
 ```bash
