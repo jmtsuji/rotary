@@ -3,7 +3,9 @@ name = "Rotary"
 version = "0.3.0-beta1"
 description = """Rotary is a scalable long-read assembly workflow for generating refined assemblies of circular
 prokaryotic genomes. The snakemake-based pipeline implements best practices for microbial genome assembly, using either
-hybrid short/long-read data or long read-only data as input, and addresses common issues with circular assemblies."""
+hybrid short/long-read data or long read-only data as input, and addresses common issues with circular assemblies.
+Rotary also includes a robust genome annotation pipeline featuring gene prediction, functional annotation, multigene
+taxonomy prediction, and completeness and contamination estimation."""
 authors = [
     {name = "Jackson M. Tsuji"},
     {name = "Lee H. Bergstrand"}

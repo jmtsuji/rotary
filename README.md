@@ -42,9 +42,11 @@ practices for assembling circular DNA elements, including prokaryotic chromosome
 with single microbial genomes. _rotary_ can accommodate standalone Nanopore data<sup>[1](#Footnotes)</sup> or hybrid
 Nanopore + short-read data. A long-read assembly first approach is used, and short reads (if supplied) are used for
 contig polishing. The pipeline performs short-read QC, short-read decontamination, long-read QC, assembly, end repair,
-polishing, contig rotation, and genome annotation. Best practices for handling common issues with circular DNA sequences
-are performed with help from [_spokewrench_](https://github.com/rotary-genomics/spokewrench), which can also be used
-as a standalone tool.
+polishing, contig rotation, and genome annotation (see [workflow summary](#rotary-workflow-summary) for 
+details). Best practices for handling common issues with circular DNA sequences are performed with help from 
+[_spokewrench_](https://github.com/rotary-genomics/spokewrench), which can also be used as a standalone tool. Genome 
+annotation consists of gene prediction, functional annotation, multigene taxonomy prediction, and completeness and 
+contamination estimation.
 
 ### Some advantages of using the _rotary_ assembly workflow:
 
@@ -304,7 +306,8 @@ For stable performance, we recommend to use rotary versions in the
     Polypolish (if short reads were provided) or medaka (if only long reads were provided)
 11. Gene prediction via [DFAST](https://github.com/nigyta/dfast_core)
 12. Functional and taxonomic annotation via [EggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)
-    and [GTDB-Tk](https://github.com/Ecogenomics/GTDBTk), along with other annotation methods.
+    and [GTDB-Tk](https://github.com/Ecogenomics/GTDBTk)
+13. Genome completeness and contamination estimation via [CheckM2](https://github.com/chklovski/CheckM2)
 
 ### Known issues
 
