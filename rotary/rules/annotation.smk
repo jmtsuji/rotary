@@ -283,13 +283,14 @@ rule run_checkm2:
     conda:
         "../envs/checkm2.yaml"
     params:
-        db=directory(os.path.join(DB_DIR_PATH,"checkm2"))
+        db=directory(os.path.join(DB_DIR_PATH,"checkm2","CheckM2_database","uniref100.KO.1.dmnd"))
     threads:
         config.get("threads",1)
     shell:
         """
         mkdir -p {output.outdir}
-        checkm2 predict --threads {threads} --input {input.genome} --output-directory {output.outdir} > {log} 2>&1
+        checkm2 predict --threads {threads} --input {input.genome} --output-directory {output.outdir} \
+            --database_path {params.db} > {log} 2>&1
         mv {output.outdir}/quality_report.tsv {output.quality_report}
         """
 
