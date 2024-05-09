@@ -12,17 +12,13 @@ Scalable workflow for long-read DNA assemblies including circular elements
 ### Install
 ```bash
 git clone https://github.com/rotary-genomics/rotary.git
-git clone https://github.com/rotary-genomics/rotary-utils.git
 git clone https://github.com/rotary-genomics/pungi.git
 
 conda env create -n rotary --file=rotary/environment.yml
 
 conda activate rotary
 
-cd rotary-utils
-pip install --editable .
-
-cd ../pungi
+cd pungi
 pip install --editable .
 
 cd ../rotary
@@ -86,17 +82,13 @@ as a standalone tool.
 ### Install rotary
 ```bash
 git clone https://github.com/rotary-genomics/rotary.git
-git clone https://github.com/rotary-genomics/spokewrench.git
 git clone https://github.com/rotary-genomics/pungi.git
 
 conda env create -n rotary --file=rotary/environment.yml
 
 conda activate rotary
 
-cd spokewrench
-pip install --editable .
-
-cd ../pungi
+cd pungi
 pip install --editable .
 
 cd ../rotary
