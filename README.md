@@ -163,8 +163,10 @@ the directory will utilize this file for run parameters. The config file can be 
 Very Important Parameters:
 
 - `flye_input_mode`: set to "nano-hq" if your reads have <= 5% error rate; otherwise use "nano-raw"
-- `medaka_model`: set this parameter to match the flow cell version / basecalling model you used to generate the long
-  reads. See details in the [Medaka Github repo's "Models" section](https://github.com/nanoporetech/medaka#models)
+- `medaka_model`: The medaka model is determined automatically by default. However, the user must manually specify the 
+   medaka model for older nanopore datasets, which do not contain basecaller versions in their FASTQ file headers. The 
+   specified medaka model must match the flow cell version / basecalling model you used to generate the long reads. See 
+   details in the [Medaka Github repo's "Models" section (https://github.com/nanoporetech/medaka#models). 
 - "Post-polishing contig filter" section: set the min depth and coverage you would like for a contig to be kept (more
   info in that section of the YAML file)
 
