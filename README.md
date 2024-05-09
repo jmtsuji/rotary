@@ -48,10 +48,7 @@ these utilities are intended to serve as a modern replacement for [circlator](ht
 which is now in a frozen development state. The _rotary_ genome assembly pipeline and utilities can accommodate 
 standalone Nanopore data<sup>[1](#Footnotes)</sup> or hybrid Nanopore + short-read data. The pipeline uses a 
 long-read assembly first approach with optional contig polishing using short-reads. It performs short-read QC, 
-short-read decontamination, long-read QC, assembly, end repair, polishing, contig rotation, and genome annotation
-(see [workflow summary](#rotary-workflow-summary) for 
-details). Genome annotation consists of gene prediction, functional annotation, multigene taxonomy prediction, and 
-completeness and contamination estimation.
+short-read decontamination, long-read QC, assembly, end repair, polishing, contig rotation, and genome annotation.
 
 ### Use cases for _rotary_
 We envision two possible ways that _rotary_ can be used:
@@ -298,7 +295,6 @@ please feel free to use this basic working version.
 11. Gene prediction via [DFAST](https://github.com/nigyta/dfast_core)
 12. Functional and taxonomic annotation via [EggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)
     and [GTDB-Tk](https://github.com/Ecogenomics/GTDBTk)
-13. Genome completeness and contamination estimation via [CheckM2](https://github.com/chklovski/CheckM2)
 
 ### Known issues
 
