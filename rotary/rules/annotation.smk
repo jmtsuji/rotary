@@ -8,7 +8,7 @@ from rotary.annotation import AnnotationMap
 VERSION_DFAST="1.2.18"
 VERSION_EGGNOG="5.0.0" # See http://eggnog5.embl.de/#/app/downloads
 
-VERSION_GTDB_COMPLETE= "214.1" # See https://data.gtdb.ecogenomic.org/releases/
+VERSION_GTDB_COMPLETE= "220.0" # See https://data.gtdb.ecogenomic.org/releases/
 VERSION_GTDB_MAIN=VERSION_GTDB_COMPLETE.split('.')[0] # Remove subversion
 
 DB_DIR_PATH = config.get('db_dir')
@@ -73,7 +73,8 @@ rule download_gtdb_db:
         db_dir_root=os.path.join(DB_DIR_PATH),
         initial_download_dir=os.path.join(DB_DIR_PATH,"release" + VERSION_GTDB_MAIN),
         db_dir=os.path.join(DB_DIR_PATH,"GTDB_" + VERSION_GTDB_COMPLETE),
-        url="https://data.gtdb.ecogenomic.org/releases/release" + VERSION_GTDB_MAIN + "/" + VERSION_GTDB_COMPLETE + "/auxillary_files/gtdbtk_r" + VERSION_GTDB_MAIN + "_data.tar.gz"
+        url=f"https://data.gtdb.ecogenomic.org/releases/release{VERSION_GTDB_MAIN}/{VERSION_GTDB_COMPLETE}/"
+            f"auxillary_files/gtdbtk_package/full_package/gtdbtk_r{VERSION_GTDB_MAIN}_data.tar.gz"
     shell:
         """
         mkdir -p {params.db_dir_root}
@@ -127,7 +128,7 @@ rule build_gtdb_mash_ref_database:
     threads:
         config.get("threads",1)
     params:
-        fast_ani_genomes_dir=os.path.join(DB_DIR_PATH,"GTDB_" + VERSION_GTDB_COMPLETE,'fastani','database')
+        fast_ani_genomes_dir=os.path.join(DB_DIR_PATH,"GTDB_" + VERSION_GTDB_COMPLETE,'skani','database')
     shell:
         """
         find {params.fast_ani_genomes_dir} -name *_genomic.fna.gz -type f > {output.ref_genome_path_list}
