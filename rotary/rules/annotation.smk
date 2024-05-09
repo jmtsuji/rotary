@@ -128,7 +128,7 @@ rule build_gtdb_mash_ref_database:
     threads:
         config.get("threads",1)
     params:
-        fast_ani_genomes_dir=os.path.join(DB_DIR_PATH,"GTDB_" + VERSION_GTDB_COMPLETE,'fastani','database')
+        fast_ani_genomes_dir=os.path.join(DB_DIR_PATH,"GTDB_" + VERSION_GTDB_COMPLETE,'skani','database')
     shell:
         """
         find {params.fast_ani_genomes_dir} -name *_genomic.fna.gz -type f > {output.ref_genome_path_list}
