@@ -50,6 +50,8 @@ rule assembly_end_repair:
         assembly="{sample}/assembly/end_repair/{sample}_repaired.fasta",
         info="{sample}/assembly/end_repair/{sample}_repaired_info.tsv",
         output_dir=directory("{sample}/assembly/end_repair")
+    conda:
+        "../envs/spokewrench.yaml"
     log:
         "{sample}/logs/assembly/end_repair.log"
     benchmark:
@@ -69,7 +71,7 @@ rule assembly_end_repair:
         mem=config.get("memory")
     shell:
         """
-        rotary-repair --long_read_filepath {input.qc_long_reads} \
+        spokewrench repair --long_read_filepath {input.qc_long_reads} \
           --assembly_fasta_filepath {input.assembly} \
           --assembly_info_filepath {input.info} \
           --output_dir {output.output_dir} \
