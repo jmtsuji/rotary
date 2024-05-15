@@ -350,13 +350,33 @@ rule finalize_qc_short:
         """
 
 
-
 rule qc_short:
     input:
         expand("{sample}/qc/{sample}_qc_R1.fastq.gz", sample=SAMPLE_NAMES),
         expand("{sample}/qc/{sample}_qc_R2.fastq.gz", sample=SAMPLE_NAMES)
     output:
         temp(touch("checkpoints/qc_short"))
+
+
+rule run_fastqc_raw:
+    input:
+        long_reads="{sample}/raw/{sample}_long.fastq.gz",
+        short_R1_reads="{sample}/raw/{sample}_R1.fastq.gz" if DATASET_HAS_SHORT_READS else [],
+        short_R2_reads="{sample}/raw/{sample}_R2.fastq.gz" if DATASET_HAS_SHORT_READS else []
+    output:
+        directory("{sample}/qc/qc_stats")
+    conda:
+        "../envs/qc.yaml"
+    log:
+        "{sample}/logs/qc/qc_stats.log"
+    benchmark:
+        "{sample}/benchmarks/qc/short/qc_stats.txt"
+    threads:
+        config.get("threads", 1)
+    shell:
+        """
+        fastqc -o {output} -t {threads} {input} >{log} 2>&1
+        """
 
 rule run_fastqc:
     input:

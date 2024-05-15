@@ -6,3 +6,4 @@ dependencies:
   - bbmap=38.18
   - pigz=2.8
   - fastqc=0.12.*
+  - multiqc=1.21.*
