@@ -387,7 +387,7 @@ rule run_fastq_short:
         short_reformat=expand("{{sample}}/qc/short/{{sample}}_reformat_{direction}.fastq.gz", direction=['R1','R2']),
         short_adapter_trim=expand("{{sample}}/qc/short/{{sample}}_adapter_trim_{direction}.fastq.gz", direction=['R1','R2']),
         short_quality_trim=expand("{{sample}}/qc/short/{{sample}}_quality_trim_{direction}.fastq.gz", direction=['R1','R2']),
-        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz", direction=['R1','R2'])
+        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz", direction=['R1','R2']) if CONTAMINANT_REFERENCE_GENOMES else []
     output:
         checkpoints=temp(touch("checkpoints/qc_stats_short_{sample}")),
         raw_short_reads=expand("{{sample}}/raw/{{sample}}_{direction}{end}", direction=['R1', 'R2'], end=['fastqc.html', '_fastqc.zip']),
