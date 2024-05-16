@@ -383,18 +383,12 @@ rule run_fastqc_long:
 
 rule run_fastq_short:
     input:
-        raw_short_reads=expand("{{sample}}/raw/{{sample}}_{direction}.fastq.gz", direction=['R1','R2']),
-        short_reformat=expand("{{sample}}/qc/short/{{sample}}_reformat_{direction}.fastq.gz", direction=['R1','R2']),
-        short_adapter_trim=expand("{{sample}}/qc/short/{{sample}}_adapter_trim_{direction}.fastq.gz", direction=['R1','R2']),
-        short_quality_trim=expand("{{sample}}/qc/short/{{sample}}_quality_trim_{direction}.fastq.gz", direction=['R1','R2']),
-        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz", direction=['R1','R2'])
+        raw_short_reads = expand("{{sample}}/raw/{{sample}}_{direction}.fastq.gz",direction=['R1', 'R2']),
+        qced_short_reads = expand("{sample}/qc/short/{sample}{file_type}{direction}.fastq.gz", file_type=['_reformat_', '_adapter_trim_', '_quality_trim_', '_filter_'], direction=['R1', 'R2']),
     output:
         checkpoints=temp(touch("checkpoints/qc_stats_short_{sample}")),
-        raw_short_reads=expand("{{sample}}/raw/{{sample}}_{direction}{end}", direction=['R1', 'R2'], end=['fastqc.html', '_fastqc.zip']),
-        short_reformat=expand("{{sample}}/qc/short/{{sample}}_reformat_{direction}{end}", direction=['R1', 'R2'], end=['fastqc.html', '_fastqc.zip']),
-        short_adapter_trim=expand("{{sample}}/qc/short/{{sample}}_adapter_trim_{direction}{end}", direction=['R1','R2'], end=['fastqc.html', '_fastqc.zip']),
-        short_quality_trim=expand("{{sample}}/qc/short/{{sample}}_quality_trim_{direction}{end}", direction=['R1','R2'], end=['fastqc.html', '_fastqc.zip']),
-        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}{end}", direction=['R1','R2'], end=['fastqc.html', '_fastqc.zip']) if CONTAMINANT_REFERENCE_GENOMES else []
+        raw_short_reads=expand("{{sample}}/raw/{{sample}}_{direction}{end}",direction=['R1', 'R2'],end=['fastqc.html','_fastqc.zip']),
+        qced_short_reads=expand("{sample}/qc/short/{sample}{file_type}{direction}{end}", file_type=['_reformat_', '_adapter_trim_', '_quality_trim_', '_filter_'], direction=['R1', 'R2'], end=['fastqc.html', '_fastqc.zip']) if CONTAMINANT_REFERENCE_GENOMES else []
     conda:
         "../envs/qc.yaml"
     log:
@@ -404,7 +398,7 @@ rule run_fastq_short:
     params:
         outdir="{sample}/qc/qc_stats/short"
     threads:
-        config.get("threads", 1)
+        config.get("threads",1)
     shell:
         """
         fastqc -o {params.outdir} -t {threads} {input} >{log} 2>&1
