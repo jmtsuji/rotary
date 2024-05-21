@@ -426,12 +426,14 @@ rule run_multiqc:
         "{sample}/logs/qc/qc_stats_multiqc_{type}.log"
     benchmark:
         "{sample}/benchmarks/qc/short/qc_stats_multiqc_{type}.txt"
+    params:
+        qc_stats_dir="{sample}/qc/qc_stats/{type}"
     shell:
         """
-        multiqc --outdir {input} \
+        multiqc --outdir {params.qc_stats_dir} \
         --title '{wildcards.sample}_{wildcards.type}' \
         --data-format tsv \
-        --zip-data-dir {input} > {log} 2>&1
+        --zip-data-dir {params.qc_stats_dir} > {log} 2>&1
         """
 
 rule qc_stats:
