@@ -376,10 +376,12 @@ rule run_fastqc_long:
         outdir="{sample}/qc/qc_stats/long"
     threads:
         2
+    resources:
+        mem_mb=1024
     shell:
         """
         mkdir -p {params.outdir}
-        fastqc -o {params.outdir} -t {threads} {input} > {log} 2>&1
+        fastqc -o {params.outdir} --memory {resources.mem_mb} -t {threads} {input} > {log} 2>&1
         """
 
 rule run_fastq_short:
