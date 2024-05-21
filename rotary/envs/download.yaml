@@ -4,3 +4,4 @@ channels:
 dependencies:
   - ncbi-datasets-cli=15.27
   - pigz=2.8
+  - unzip=6.0
