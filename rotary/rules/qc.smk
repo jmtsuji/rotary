@@ -378,6 +378,7 @@ rule run_fastqc_long:
         2
     shell:
         """
+        mkdir -p {params.outdir}
         fastqc -o {params.outdir} -t {threads} {input} > {log} 2>&1
         """
 
@@ -407,6 +408,7 @@ rule run_fastq_short:
         config.get("threads", 1)
     shell:
         """
+        mkdir -p {params.outdir}
         fastqc -o {params.outdir} -t {threads} {input} >{log} 2>&1
         """
 
