@@ -358,14 +358,16 @@ rule qc_short:
         temp(touch("checkpoints/qc_short"))
 
 
+FASTQC_OUTPUTS = ['_fastqc.html', '_fastqc.zip']
+
 rule run_fastqc_long:
     input:
         raw_long_reads="{sample}/raw/{sample}_long.fastq.gz",
         qced_long_reads="{sample}/qc/long/{sample}_nanopore_qc.fastq.gz",
     output:
         checkpoints=temp(touch("checkpoints/qc_stats_long_{sample}")),
-        raw_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_long{end}", end=['_fastqc.html', '_fastqc.zip']),
-        qced_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_nanopore_qc{end}",end=['_fastqc.html', '_fastqc.zip']),
+        raw_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_long{end}", end=FASTQC_OUTPUTS),
+        qced_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_nanopore_qc{end}",end=FASTQC_OUTPUTS),
     conda:
         "../envs/qc.yaml"
     log:
@@ -384,20 +386,19 @@ rule run_fastqc_long:
         fastqc -o {params.outdir} --memory {resources.mem_mb} -t {threads} {input} > {log} 2>&1
         """
 
+FASTQ_DIRECTIONS = ['R1', 'R2']
+QC_SHORT_FILE_TYPES = ['_reformat_', '_adapter_trim_', '_quality_trim_']
+
 rule run_fastq_short:
     input:
-        raw_short_reads=expand("{{sample}}/raw/{{sample}}_{direction}.fastq.gz", direction=['R1','R2']),
-        short_reformat=expand("{{sample}}/qc/short/{{sample}}_reformat_{direction}.fastq.gz", direction=['R1','R2']),
-        short_adapter_trim=expand("{{sample}}/qc/short/{{sample}}_adapter_trim_{direction}.fastq.gz", direction=['R1','R2']),
-        short_quality_trim=expand("{{sample}}/qc/short/{{sample}}_quality_trim_{direction}.fastq.gz", direction=['R1','R2']),
-        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz", direction=['R1','R2']) if CONTAMINANT_REFERENCE_GENOMES else []
+        raw_short_reads = expand("{{sample}}/raw/{{sample}}_{direction}.fastq.gz", direction=FASTQ_DIRECTIONS),
+        qced_short_reads = expand("{{sample}}/qc/short/{{sample}}{file_type}{direction}.fastq.gz", file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS),
+        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz", direction=FASTQ_DIRECTIONS) if CONTAMINANT_REFERENCE_GENOMES else[]
     output:
-        checkpoints=temp(touch("checkpoints/qc_stats_short_{sample}")),
-        raw_short_reads=expand("{{sample}}/qc/qc_stats/short/{{sample}}_{direction}{end}", direction=['R1', 'R2'], end=['_fastqc.html', '_fastqc.zip']),
-        short_reformat=expand("{{sample}}/qc/qc_stats/short/{{sample}}_reformat_{direction}{end}", direction=['R1', 'R2'], end=['_fastqc.html', '_fastqc.zip']),
-        short_adapter_trim=expand("{{sample}}/qc/qc_stats/short/{{sample}}_adapter_trim_{direction}{end}", direction=['R1','R2'], end=['_fastqc.html', '_fastqc.zip']),
-        short_quality_trim=expand("{{sample}}/qc/qc_stats/short/{{sample}}_quality_trim_{direction}{end}", direction=['R1','R2'], end=['_fastqc.html', '_fastqc.zip']),
-        short_contamination_filter=expand("{{sample}}/qc/qc_stats/short/{{sample}}_filter_{direction}{end}", direction=['R1','R2'], end=['_fastqc.html', '_fastqc.zip']) if CONTAMINANT_REFERENCE_GENOMES else []
+        checkpoints = temp(touch("checkpoints/qc_stats_short_{sample}")),
+        raw_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS),
+        qced_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}{file_type}{direction}{end}", file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS),
+        short_contamination_filter = expand("{{sample}}/qc/qc_stats/short/{{sample}}_filter_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS) if CONTAMINANT_REFERENCE_GENOMES else[]
     conda:
         "../envs/qc.yaml"
     log:
@@ -407,7 +408,7 @@ rule run_fastq_short:
     params:
         outdir="{sample}/qc/qc_stats/short"
     threads:
-        config.get("threads", 1)
+        config.get("threads",1)
     shell:
         """
         mkdir -p {params.outdir}
