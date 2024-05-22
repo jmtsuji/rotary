@@ -366,8 +366,8 @@ rule run_fastqc_long:
         qced_long_reads="{sample}/qc/long/{sample}_nanopore_qc.fastq.gz",
     output:
         checkpoints=temp(touch("checkpoints/qc_stats_long_{sample}")),
-        raw_long_reads_fastqc=temp(expand("{{sample}}/qc/qc_stats/long/{{sample}}_long{end}", end=FASTQC_OUTPUTS)),
-        qced_long_reads_fastqc=temp(expand("{{sample}}/qc/qc_stats/long/{{sample}}_nanopore_qc{end}",end=FASTQC_OUTPUTS)),
+        raw_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_long{end}", end=FASTQC_OUTPUTS),
+        qced_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_nanopore_qc{end}",end=FASTQC_OUTPUTS),
     conda:
         "../envs/qc.yaml"
     log:
@@ -391,14 +391,14 @@ QC_SHORT_FILE_TYPES = ['_reformat_', '_adapter_trim_', '_quality_trim_']
 
 rule run_fastq_short:
     input:
-        raw_short_reads=expand("{{sample}}/raw/{{sample}}_{direction}.fastq.gz", direction=FASTQ_DIRECTIONS),
-        qced_short_reads=expand("{{sample}}/qc/short/{{sample}}{file_type}{direction}.fastq.gz", file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS),
-        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz", direction=FASTQ_DIRECTIONS) if CONTAMINANT_REFERENCE_GENOMES else []
+        raw_short_reads = expand("{{sample}}/raw/{{sample}}_{direction}.fastq.gz", direction=FASTQ_DIRECTIONS),
+        qced_short_reads = expand("{{sample}}/qc/short/{{sample}}{file_type}{direction}.fastq.gz", file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS),
+        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz", direction=FASTQ_DIRECTIONS) if CONTAMINANT_REFERENCE_GENOMES else[]
     output:
-        checkpoints=temp(touch("checkpoints/qc_stats_short_{sample}")),
-        raw_short_reads=temp(expand("{{sample}}/qc/qc_stats/short/{{sample}}_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS)),
-        qced_short_reads=temp(expand("{{sample}}/qc/qc_stats/short/{{sample}}{file_type}{direction}{end}", file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS)),
-        short_contamination_filter=temp(expand("{{sample}}/qc/qc_stats/short/{{sample}}_filter_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS)) if CONTAMINANT_REFERENCE_GENOMES else []
+        checkpoints = temp(touch("checkpoints/qc_stats_short_{sample}")),
+        raw_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS),
+        qced_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}{file_type}{direction}{end}", file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS),
+        short_contamination_filter = expand("{{sample}}/qc/qc_stats/short/{{sample}}_filter_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS) if CONTAMINANT_REFERENCE_GENOMES else[]
     conda:
         "../envs/qc.yaml"
     log:
