@@ -378,9 +378,12 @@ rule run_fastqc_long:
         outdir="{sample}/qc/qc_stats/long"
     threads:
         2
+    resources:
+        mem_mb=1024
     shell:
         """
-        fastqc -o {params.outdir} -t {threads} {input} > {log} 2>&1
+        mkdir -p {params.outdir}
+        fastqc -o {params.outdir} --memory {resources.mem_mb} -t {threads} {input} > {log} 2>&1
         """
 
 FASTQ_DIRECTIONS = ['R1', 'R2']
@@ -393,9 +396,9 @@ rule run_fastq_short:
         short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz", direction=FASTQ_DIRECTIONS) if CONTAMINANT_REFERENCE_GENOMES else[]
     output:
         checkpoints = temp(touch("checkpoints/qc_stats_short_{sample}")),
-        raw_short_reads = expand("{{sample}}/raw/{{sample}}_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS),
-        qced_short_reads = expand("{{sample}}/qc/short/{{sample}}{file_type}{direction}{end}", file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS),
-        short_contamination_filter = expand("{{sample}}/qc/short/{{sample}}_filter_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS) if CONTAMINANT_REFERENCE_GENOMES else[]
+        raw_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS),
+        qced_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}{file_type}{direction}{end}", file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS),
+        short_contamination_filter = expand("{{sample}}/qc/qc_stats/short/{{sample}}_filter_{direction}{end}", direction=FASTQ_DIRECTIONS, end=FASTQC_OUTPUTS) if CONTAMINANT_REFERENCE_GENOMES else[]
     conda:
         "../envs/qc.yaml"
     log:
@@ -408,6 +411,7 @@ rule run_fastq_short:
         config.get("threads",1)
     shell:
         """
+        mkdir -p {params.outdir}
         fastqc -o {params.outdir} -t {threads} {input} >{log} 2>&1
         """
 
@@ -423,12 +427,14 @@ rule run_multiqc:
         "{sample}/logs/qc/qc_stats_multiqc_{type}.log"
     benchmark:
         "{sample}/benchmarks/qc/short/qc_stats_multiqc_{type}.txt"
+    params:
+        qc_stats_dir="{sample}/qc/qc_stats/{type}"
     shell:
         """
-        multiqc --outdir {input} \
+        multiqc --outdir {params.qc_stats_dir} \
         --title '{wildcards.sample}_{wildcards.type}' \
         --data-format tsv \
-        --zip-data-dir {input} > {log} 2>&1
+        --zip-data-dir {params.qc_stats_dir} > {log} 2>&1
         """
 
 rule qc_stats:
