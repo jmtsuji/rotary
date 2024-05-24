@@ -9,7 +9,7 @@ rule assembly_flye:
     input:
         "{sample}/qc/{sample}_qc_long.fastq.gz"
     output:
-        assembly="{sample}/assembly/flye/{sample}_assembly.fasta",
+        assembly="{sample}/assembly/flye/{sample}_flye_assembly.fasta",
         info="{sample}/assembly/flye/{sample}_assembly_info.txt",
         output_dir=directory("{sample}/assembly/flye"),
         assembly_dir=temp(directory("{sample}/assembly/flye/00-assembly")),
@@ -44,10 +44,10 @@ rule assembly_flye:
 rule assembly_end_repair:
     input:
         qc_long_reads="{sample}/qc/{sample}_qc_long.fastq.gz",
-        assembly="{sample}/assembly/flye/{sample}_assembly.fasta",
+        assembly="{sample}/assembly/flye/{sample}_flye_assembly.fasta",
         info="{sample}/assembly/flye/{sample}_assembly_info.txt"
     output:
-        assembly="{sample}/assembly/end_repair/{sample}_repaired.fasta",
+        assembly="{sample}/assembly/end_repair/{sample}_end_repair_assembly.fasta",
         info="{sample}/assembly/end_repair/{sample}_repaired_info.tsv",
         output_dir=directory("{sample}/assembly/end_repair")
     conda:
