@@ -90,11 +90,36 @@ rule assembly_end_repair:
         mv {output.output_dir}/repaired_info.tsv {output.info}
         """
 
+rule run_quast:
+    input:
+        flye_assembly = "{sample}/assembly/flye/{sample}_flye_assembly.fasta",
+        end_repair_assembly= "{sample}/assembly/end_repair/{sample}_end_repair_assembly.fasta",
+    output:
+        stats_dir=directory("{sample}/assembly/stats/"),
+        report=multiext("{sample}/assembly/stats/report", '.html', '.tex', '.tsv', '.txt', '.pdf'),
+        transposed_report=multiext("{sample}/assembly/stats/transposed_report",
+            '.html', '.tex', '.tsv', '.txt', '.pdf')
+    conda:
+        "../envs/qc.yaml"
+    log:
+        "{sample}/logs/assembly/assembly_stats.log"
+    benchmark:
+        "{sample}/benchmarks/assembly/assembly_stats.benchmark.txt"
+    threads:
+        2
+    shell:
+        """
+        quast -t {threads} --space-efficient \
+        --labels "{wildcards.sample}_flye, {wildcards.sample}_end_repair" \
+        -o {output.stats_dir} {input} > {log} 2>&1
+        """
+
 
 rule finalize_assembly:
     input:
-        assembly="{sample}/assembly/end_repair/{sample}_repaired.fasta",
-        info="{sample}/assembly/end_repair/{sample}_repaired_info.tsv"
+        assembly="{sample}/assembly/end_repair/{sample}_end_repair_assembly.fasta",
+        info="{sample}/assembly/end_repair/{sample}_repaired_info.tsv",
+        stats="{sample}/assembly/stats/report.pdf"
     output:
         assembly="{sample}/assembly/{sample}_assembly.fasta",
         info="{sample}/assembly/{sample}_circular_info.tsv"
