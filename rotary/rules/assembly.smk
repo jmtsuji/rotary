@@ -97,8 +97,7 @@ rule run_quast:
     output:
         stats_dir=directory("{sample}/assembly/stats/"),
         report=multiext("{sample}/assembly/stats/report", '.html', '.tex', '.tsv', '.txt', '.pdf'),
-        transposed_report=multiext("{sample}/assembly/stats/transposed_report",
-            '.html', '.tex', '.tsv', '.txt', '.pdf')
+        transposed_report=multiext("{sample}/assembly/stats/transposed_report",'.tex', '.tsv', '.txt')
     conda:
         "../envs/qc.yaml"
     log:
