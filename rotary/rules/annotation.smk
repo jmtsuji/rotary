@@ -73,7 +73,7 @@ rule download_gtdb_db:
         db_dir_root=os.path.join(DB_DIR_PATH),
         initial_download_dir=os.path.join(DB_DIR_PATH,"release" + VERSION_GTDB_MAIN),
         db_dir=os.path.join(DB_DIR_PATH,"GTDB_" + VERSION_GTDB_COMPLETE),
-        url=f"https://data.gtdb.ecogenomic.org/releases/release{VERSION_GTDB_MAIN}/{VERSION_GTDB_COMPLETE}/"
+        url=f"https://data.ace.uq.edu.au/public/gtdb/data/releases/release{VERSION_GTDB_MAIN}/{VERSION_GTDB_COMPLETE}/"
             f"auxillary_files/gtdbtk_package/full_package/gtdbtk_r{VERSION_GTDB_MAIN}_data.tar.gz"
     shell:
         """
