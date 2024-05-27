@@ -1,6 +1,7 @@
 # rotary: utilities and workflow for long-read DNA assemblies including circular elements
 # Copyright Jackson M. Tsuji and Lee H. Bergstrand, 2023
 
+import os
 from snakemake.utils import min_version
 
 from pungi.dataset import generate_dataset_from_sample_tsv
@@ -57,6 +58,14 @@ include: './assembly.smk'
 include: './polish.smk'
 include: './circularize.smk'
 include: './annotation.smk'
+
+DB_DIR_PATH = config.get('db_dir')
+
+rule download:
+    input:
+        annotation_downloaded=os.path.join(DB_DIR_PATH,"checkpoints","annotation_downloaded"),
+        circularize_downloaded=os.path.join(DB_DIR_PATH,"checkpoints","circularize_downloaded"),
+        qc_downloaded=os.path.join(DB_DIR_PATH,"checkpoints","qc_downloaded")
 
 # TODO - add nice summaries of reads removed during QC, polishing stats, assembly stats, circular vs. non.
 #        These aren't in the final ZIP summary at the moment.

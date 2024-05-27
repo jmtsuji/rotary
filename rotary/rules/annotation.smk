@@ -152,6 +152,15 @@ rule download_checkm_db:
         touch {output.install_finished}
         """
 
+rule annotation_download:
+    input:
+        checkm_install_finished = os.path.join(DB_DIR_PATH,"checkpoints","checkm2"),
+        gtdb_ref_msh_file=os.path.join(DB_DIR_PATH,"GTDB_" + VERSION_GTDB_COMPLETE + '_mash','gtdb_ref_sketch.msh'),
+        eggnog_install_finished=os.path.join(DB_DIR_PATH,"checkpoints","eggnog_" + VERSION_EGGNOG),
+        dfast_install_finished=os.path.join(DB_DIR_PATH,"checkpoints","dfast_" + VERSION_DFAST)
+    output:
+        annotation_downloaded=os.path.join(DB_DIR_PATH,"checkpoints","annotation_downloaded")
+
 # TODO - I might need to remove special characters from strain name to use for locus tag prefix
 # TODO - can I auto-predict genome completeness, names, types, topologies?
 rule run_dfast:
