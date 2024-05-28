@@ -8,14 +8,23 @@ from pungi.dataset import generate_dataset_from_sample_tsv
 from pungi.utils import symlink_or_compress, is_config_parameter_true
 
 SAMPLE_TSV_PATH = 'samples.tsv'
-SAMPLES = generate_dataset_from_sample_tsv(SAMPLE_TSV_PATH)
 
-if SAMPLES.files_per_sample==3:
-    DATASET_HAS_SHORT_READS=True
+# When running rotary in download mode, there can be situations where samples.tsv is not present in the CWD.
+# We bypass processing samples if no samples.tsv file is found in the CWD.
+if os.path.isfile(os.path.join(os.getcwd(), SAMPLE_TSV_PATH)):
+    SAMPLES = generate_dataset_from_sample_tsv(SAMPLE_TSV_PATH)
+
+    if SAMPLES.files_per_sample==3:
+        DATASET_HAS_SHORT_READS=True
+    else:
+        DATASET_HAS_SHORT_READS=False
+
+    SAMPLE_NAMES = list(SAMPLES.identifiers)
 else:
+    # Some variables are required for evaluating the DAG because they are used in rules.
+    # We mock them if no samples.tsv file is found.
+    SAMPLE_NAMES=['mock_sample_name']
     DATASET_HAS_SHORT_READS=False
-
-SAMPLE_NAMES = list(SAMPLES.identifiers)
 
 # Specify the minimum snakemake version allowable
 min_version("7.0")
