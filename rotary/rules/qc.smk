@@ -448,8 +448,7 @@ rule run_multiqc:
 
 rule qc_stats:
     input:
-        # expand("{sample}/polish/{sample}_polish.fasta",sample=SAMPLE_NAMES),
-        multqc_short_report=expand("{sample}/qc/qc_stats/short/{sample}_short_multiqc_report.html", sample=SAMPLE_NAMES),
+        multqc_short_report=expand("{sample}/qc/qc_stats/short/{sample}_short_multiqc_report.html", sample=SAMPLE_NAMES) if POLISH_WITH_SHORT_READS else [],
         multqc_long_report=expand("{sample}/qc/qc_stats/long/{sample}_long_multiqc_report.html", sample=SAMPLE_NAMES)
     output:
         temp(touch("checkpoints/qc_stats"))
