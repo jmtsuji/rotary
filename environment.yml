@@ -10,6 +10,7 @@ dependencies:
   - wget
   - psutil=5.9.5
   - pulp=2.7.0 # temporary workaround for installation of snakemake 7 (force downgrade of pulp)
+  - zip=3.*
   - pip
   - pip:
       - git+https://github.com/rotary-genomics/pungi@develop

@@ -21,6 +21,7 @@ requirements:
     - flye=2.9
     - minimap2=2.23
     - samtools=1.15
+    - zip=3.*
 
 build:
   script: poetry install
