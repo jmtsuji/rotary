@@ -326,7 +326,7 @@ if (config.get("meandepth_cutoff_long_read") != "None") | (config.get("evenness_
             mapping=temp("{sample}/polish/cov_filter/{sample}_long_read.bam"),
             mapping_index=temp("{sample}/polish/cov_filter/{sample}_long_read.bam.bai"),
             coverage="{sample}/polish/cov_filter/{sample}_long_read_coverage.tsv",
-            long_read_map=temp("{sample}/assembly/end_repair/{sample}_repaired.fasta.map-ont.mmi")
+            long_read_map=temp("{sample}/assembly/end_repair/{sample}_end_repair_assembly.fasta.map-ont.mmi")
         conda:
             "../envs/mapping.yaml"
         log:
