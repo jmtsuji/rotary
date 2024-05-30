@@ -213,7 +213,7 @@ def parse_cli():
     parser_run_one.add_argument('-o', '--output_dir', metavar='PATH', default=os.getcwd(),
                                 help='path the output/rotary project directory')
     parser_run_one.add_argument('-d', '--database_dir', metavar='PATH',
-                                help='path the rotary database directory')
+                                help='path to the rotary database directory')
     parser_run_one.add_argument('-j', '--jobs', metavar='JOBS',
                                 help='number of threads that rotary should use (overrides config)')
     parser_run_one.add_argument('-s', '--snakemake_args', metavar='',
@@ -230,7 +230,7 @@ def parse_cli():
     parser_init.add_argument('-o', '--output_dir', metavar='PATH',
                              help='path the output/rotary project directory', default=os.getcwd())
     parser_init.add_argument('-d', '--database_dir', metavar='PATH', required=True,
-                             help='path the rotary database directory')
+                             help='path to the rotary database directory')
     parser_init.add_argument('-i', '--input_dir', metavar='PATH', required=True,
                              help='path to a directory containing Oxford Nanopore long-read and Illumina short-read .fastq(.gz) files')
     parser_init.add_argument('-f', '--force', action='store_true',
@@ -244,7 +244,7 @@ def parse_cli():
     download_help = """Downloads databases required by rotary to a specific directory """
     parser_download = subparsers.add_parser('download', help=download_help)
     parser_download.add_argument('-d', '--database_dir', metavar='PATH', required=True,
-                                 help='path the rotary database directory')
+                                 help='path to the rotary database directory')
     parser_download.add_argument('-c', '--config', metavar='YAML',
                                  help='path to the rotary yaml config file')
     parser_download.add_argument('-j', '--jobs', metavar='JOBS',
