@@ -24,6 +24,8 @@ ZENODO_VERSION = "10087395"
 DB_DIR_PATH = config.get('db_dir')
 
 KEEP_QC_READ_FILES = is_config_parameter_true(config,'keep_final_qc_read_files')
+PERFORM_ADAPTER_TRIMMING = is_config_parameter_true(config,'perform_adapter_trimming')
+OVERLAP_BASED_TRIMMING = is_config_parameter_true(config,'overlap_based_trimming')
 
 # SAMPLE_NAMES and POLISH_WITH_SHORT_READS are instantiated in rotary.smk
 
@@ -234,7 +236,7 @@ rule short_read_adapter_trimming:
     params:
         adapter_trimming_kmer_length = config.get("adapter_trimming_kmer_length"),
         minimum_detectable_adapter_length_on_read_end = config.get("minimum_detectable_adapter_length_on_read_end"),
-        trim_adapters_by_overlap = "t" if str(config.get("overlap_based_trimming")).lower() == "true" else "f",
+        trim_adapters_by_overlap = "t" if OVERLAP_BASED_TRIMMING else "f",
         min_read_length = config.get("minimum_read_length_adapter_trim")
     threads:
         config.get("threads", 1)
@@ -258,9 +260,10 @@ rule short_read_quality_trimming:
     The conditional statements in the input field select whether to skip adapter trimming based on the config file.
     Note: if quality_trim_direction is set as "f", the reads are just passed through this rule and not trimmed.
     """
+
     input:
-        short_r1 = "{sample}/qc/short/{sample}_adapter_trim_R1.fastq.gz" if str(config.get("perform_adapter_trimming")).lower() == 'true' else "{sample}/qc/short/{sample}_reformat_R1.fastq.gz",
-        short_r2 = "{sample}/qc/short/{sample}_adapter_trim_R2.fastq.gz" if str(config.get("perform_adapter_trimming")).lower() == 'true' else "{sample}/qc/short/{sample}_reformat_R2.fastq.gz"
+        short_r1 = "{sample}/qc/short/{sample}_adapter_trim_R1.fastq.gz" if PERFORM_ADAPTER_TRIMMING else "{sample}/qc/short/{sample}_reformat_R1.fastq.gz",
+        short_r2 = "{sample}/qc/short/{sample}_adapter_trim_R2.fastq.gz" if PERFORM_ADAPTER_TRIMMING else "{sample}/qc/short/{sample}_reformat_R2.fastq.gz"
     output:
         short_r1 = temp("{sample}/qc/short/{sample}_quality_trim_R1.fastq.gz"),
         short_r2 = temp("{sample}/qc/short/{sample}_quality_trim_R2.fastq.gz"),
@@ -338,8 +341,8 @@ rule finalize_qc_short:
     The conditional statements in this rule control whether or not contaminant filtration is performed.
     """
     input:
-        short_r1 = "{sample}/qc/short/{sample}_filter_R1.fastq.gz" if CONTAMINANT_REFERENCE_GENOMES == True else "{sample}/qc/short/{sample}_quality_trim_R1.fastq.gz",
-        short_r2 = "{sample}/qc/short/{sample}_filter_R2.fastq.gz" if CONTAMINANT_REFERENCE_GENOMES == True else "{sample}/qc/short/{sample}_quality_trim_R2.fastq.gz"
+        short_r1 = "{sample}/qc/short/{sample}_filter_R1.fastq.gz" if CONTAMINANT_REFERENCE_GENOMES else "{sample}/qc/short/{sample}_quality_trim_R1.fastq.gz",
+        short_r2 = "{sample}/qc/short/{sample}_filter_R2.fastq.gz" if CONTAMINANT_REFERENCE_GENOMES else "{sample}/qc/short/{sample}_quality_trim_R2.fastq.gz"
     output:
         short_final_r1="{sample}/qc/{sample}_qc_R1.fastq.gz" if KEEP_QC_READ_FILES else temp("{sample}/qc/{sample}_qc_R1.fastq.gz"),
         short_final_r2="{sample}/qc/{sample}_qc_R2.fastq.gz" if KEEP_QC_READ_FILES else temp("{sample}/qc/{sample}_qc_R2.fastq.gz")
