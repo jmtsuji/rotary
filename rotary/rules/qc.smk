@@ -398,7 +398,7 @@ rule run_fastqc_quality_controlled_reads:
     benchmark:
         "{sample}/benchmarks/qc/short/qc_stats_{read_type}_{file_type}_{direction_or_long}.txt"
     params:
-        outdir="{sample}/qc/qc_stats/short"
+        outdir="{sample}/qc/qc_stats/{read_type}"
     resources:
         mem_mb=lambda wildcards: 1024 if wildcards.read_type == 'long' else 512  # More memory when dealing with long reads
     shell:
