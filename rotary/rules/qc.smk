@@ -363,48 +363,44 @@ rule qc_short:
 
 FASTQC_OUTPUTS = ['_fastqc.html', '_fastqc.zip']
 
-rule run_fastqc_long:
+FASTQ_DIRECTIONS = ['R1', 'R2']
+
+rule run_fastqc_raw:
     input:
-        raw_long_reads="{sample}/raw/{sample}_long.fastq.gz",
-        qced_long_reads="{sample}/qc/long/{sample}_nanopore_qc.fastq.gz",
+        # wildcard direction can be long, R1, or R2
+        raw_long_reads="{sample}/raw/{type}/{sample}_{direction}.fastq.gz",
     output:
-        raw_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_long{output}",
-            output=FASTQC_OUTPUTS),
-        qced_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_nanopore_qc{output}",
-            output=FASTQC_OUTPUTS)
+        fastqc_html="{sample}/qc/qc_stats/{type}/{sample}_{direction}_fastqc.html",
+        fastqc_zip="{sample}/qc/qc_stats/{type}/{sample}_{direction}_fastqc.zip"
     conda:
         "../envs/qc.yaml"
     log:
-        "{sample}/logs/qc/qc_stats_long.log"
+        "{sample}/logs/qc/qc_stats_{type}_{direction}.log"
     benchmark:
-        "{sample}/benchmarks/qc/short/qc_stats_long.txt"
+        "{sample}/benchmarks/qc/short/qc_stats_{type}_{direction}.txt"
     params:
-        outdir="{sample}/qc/qc_stats/long"
-    threads:
-        2
+        outdir="{sample}/qc/qc_stats/{type}"
     resources:
-        mem_mb=1024
+        mem_mb = lambda wildcards: 1024 if wildcards.type == 'long' else 512 # More memory when dealing with long reads
     shell:
         """
         mkdir -p {params.outdir}
-        fastqc -o {params.outdir} --memory {resources.mem_mb} -t {threads} {input} > {log} 2>&1
+        fastqc -o {params.outdir} --memory {resources.mem_mb} {input} > {log} 2>&1
         """
 
-FASTQ_DIRECTIONS = ['R1', 'R2']
 QC_SHORT_FILE_TYPES = ['_reformat_', '_adapter_trim_', '_quality_trim_']
 
-rule run_fastq_short:
+rule run_fastq_qced:
     input:
-        raw_short_reads = expand("{{sample}}/raw/{{sample}}_{direction}.fastq.gz",
-            direction=FASTQ_DIRECTIONS),
+        qced_long_reads = "{sample}/qc/long/{sample}_nanopore_qc.fastq.gz",
         qced_short_reads = expand("{{sample}}/qc/short/{{sample}}{file_type}{direction}.fastq.gz",
             file_type=QC_SHORT_FILE_TYPES,
             direction=FASTQ_DIRECTIONS),
         short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz",
             direction=FASTQ_DIRECTIONS) if CONTAMINANT_REFERENCE_GENOMES else[]
     output:
-        raw_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}_{direction}{output}",
-            direction=FASTQ_DIRECTIONS, output=FASTQC_OUTPUTS),
+        qced_long_reads_fastqc = expand("{{sample}}/qc/qc_stats/long/{{sample}}_nanopore_qc{output}",
+            output=FASTQC_OUTPUTS),
         qced_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}{file_type}{direction}{output}",
             file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS, output=FASTQC_OUTPUTS),
         short_contamination_filter = expand("{{sample}}/qc/qc_stats/short/{{sample}}_filter_{direction}{output}",
