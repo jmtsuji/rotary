@@ -366,8 +366,8 @@ rule run_fastqc_raw_reads:
         # wildcard direction_or_long can be long, R1, or R2
         "{sample}/raw/{read_type}/{sample}_{direction_or_long}.fastq.gz"
     output:
-        fastqc_html="{sample}/qc/qc_stats/{read_type}/{sample}_{direction_or_long}_fastqc.html",
-        fastqc_zip="{sample}/qc/qc_stats/{read_type}/{sample}_{direction_or_long}_fastqc.zip"
+        fastqc_html=temp("{sample}/qc/qc_stats/{read_type}/{sample}_{direction_or_long}_fastqc.html"),
+        fastqc_zip=temp("{sample}/qc/qc_stats/{read_type}/{sample}_{direction_or_long}_fastqc.zip")
     conda:
         "../envs/qc.yaml"
     log:
@@ -389,8 +389,8 @@ rule run_fastqc_quality_controlled_reads:
         # wildcard direction_or_long can be long, R1, or R2
         "{sample}/qc/{read_type}/{sample}{file_type}{direction_or_long}.fastq.gz"
     output:
-        fastqc_html="{sample}/qc/qc_stats/{read_type}/{sample}{file_type}{direction_or_long}_fastqc.html",
-        fastqc_zip="{sample}/qc/qc_stats/{read_type}/{sample}{file_type}{direction_or_long}_fastqc.zip"
+        fastqc_html=temp("{sample}/qc/qc_stats/{read_type}/{sample}{file_type}{direction_or_long}_fastqc.html"),
+        fastqc_zip=temp("{sample}/qc/qc_stats/{read_type}/{sample}{file_type}{direction_or_long}_fastqc.zip")
     conda:
         "../envs/qc.yaml"
     log:
