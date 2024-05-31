@@ -90,7 +90,7 @@ rule set_up_custom_contamination_references:
 
 rule nanopore_qc_filter:
     input:
-        "{sample}/raw/{sample}_long.fastq.gz"
+        "{sample}/raw/long/{sample}_long.fastq.gz"
     output:
         temp("{sample}/qc/long/{sample}_nanopore_qc.fastq.gz")
     conda:
@@ -190,8 +190,8 @@ rule short_read_reformat:
     nucleotide characters). Threads are locked at a maximum of 4 because this code is IO limited.
     """
     input:
-        short_r1 = "{sample}/raw/{sample}_R1.fastq.gz",
-        short_r2 = "{sample}/raw/{sample}_R2.fastq.gz"
+        short_r1 = "{sample}/raw/short/{sample}_R1.fastq.gz",
+        short_r2 = "{sample}/raw/short/{sample}_R2.fastq.gz"
     output:
         short_reformat_r1 = temp("{sample}/qc/short/{sample}_reformat_R1.fastq.gz"),
         short_reformat_r2 = temp("{sample}/qc/short/{sample}_reformat_R2.fastq.gz"),
