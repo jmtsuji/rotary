@@ -361,9 +361,9 @@ rule qc_short:
         temp(touch("checkpoints/qc_short"))
 
 
-rule run_fastqc_raw:
+rule run_fastqc_raw_reads:
     input:
-        # wildcard direction can be long, R1, or R2
+        # wildcard direction_or_long can be long, R1, or R2
         "{sample}/raw/{read_type}/{sample}_{direction_or_long}.fastq.gz"
     output:
         fastqc_html="{sample}/qc/qc_stats/{read_type}/{sample}_{direction_or_long}_fastqc.html",
@@ -384,8 +384,9 @@ rule run_fastqc_raw:
         fastqc -o {params.outdir} --memory {resources.mem_mb} {input} > {log} 2>&1
         """
 
-rule run_fastq_qced:
+rule run_fastqc_quality_controlled_reads:
     input:
+        # wildcard direction_or_long can be long, R1, or R2
         "{sample}/qc/{read_type}/{sample}{file_type}{direction_or_long}.fastq.gz"
     output:
         fastqc_html="{sample}/qc/qc_stats/{read_type}/{sample}{file_type}{direction_or_long}_fastqc.html",
