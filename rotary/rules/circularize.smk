@@ -31,7 +31,7 @@ rule circularize_download:
     input:
         os.path.join(DB_DIR_PATH,"hmm",START_HMM_NAME + ".hmm")
     output:
-        os.path.join(DB_DIR_PATH,"checkpoints","circularize_downloaded")
+        touch(os.path.join(DB_DIR_PATH,"checkpoints","circularize_downloaded"))
 
 # Writes circular.list with the names of circular contigs if there are any circular contigs
 # Writes linear.list with the names of linear contigs if there are any linear contigs

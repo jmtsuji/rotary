@@ -159,7 +159,7 @@ rule annotation_download:
         eggnog_install_finished=os.path.join(DB_DIR_PATH,"checkpoints","eggnog_" + VERSION_EGGNOG),
         dfast_install_finished=os.path.join(DB_DIR_PATH,"checkpoints","dfast_" + VERSION_DFAST)
     output:
-        annotation_downloaded=os.path.join(DB_DIR_PATH,"checkpoints","annotation_downloaded")
+        annotation_downloaded=touch(os.path.join(DB_DIR_PATH,"checkpoints","annotation_downloaded"))
 
 # TODO - I might need to remove special characters from strain name to use for locus tag prefix
 # TODO - can I auto-predict genome completeness, names, types, topologies?

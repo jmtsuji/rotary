@@ -93,7 +93,7 @@ rule qc_download:
         contamination_references=expand(os.path.join(DB_DIR_PATH, 'contamination_references', 'ncbi',
             '{accession}.fna.gz'), accession=CONTAMINATION_NCBI_ACCESSIONS)
     output:
-        os.path.join(DB_DIR_PATH,"checkpoints","qc_downloaded")
+        touch(os.path.join(DB_DIR_PATH,"checkpoints","qc_downloaded"))
 
 rule nanopore_qc_filter:
     input:
