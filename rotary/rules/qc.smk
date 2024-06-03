@@ -80,6 +80,7 @@ rule download_ncbi_contamination_reference:
         fi
         """
 
+
 rule set_up_custom_contamination_references:
     output:
         expand(os.path.join(DB_DIR_PATH, 'contamination_references', 'custom', '{contaminant_name}.fna.gz'),
@@ -87,6 +88,14 @@ rule set_up_custom_contamination_references:
     run:
         for name, path in zip(CUSTOM_CONTAMINATION_FILE_NAMES,CUSTOM_CONTAMINATION_FILEPATHS):
             symlink_or_compress(path, os.path.join(DB_DIR_PATH, 'contamination_references', 'custom', f'{name}.fna.gz'))
+
+rule qc_download:
+    input:
+        short_read_adapters=os.path.join(DB_DIR_PATH, "adapters.fasta"),
+        contamination_references=expand(os.path.join(DB_DIR_PATH, 'contamination_references', 'ncbi',
+            '{accession}.fna.gz'), accession=CONTAMINATION_NCBI_ACCESSIONS)
+    output:
+        os.path.join(DB_DIR_PATH,"checkpoints","qc_downloaded")
 
 rule nanopore_qc_filter:
     input:
