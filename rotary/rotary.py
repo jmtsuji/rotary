@@ -159,9 +159,6 @@ def download(args):
     snakemake_args = get_snakemake_args(args)
 
     # Tell snakemake to only run the download rule.
-    if not snakemake_args:
-        snakemake_args = []
-
     snakemake_args.append('download')
 
     conda_env_dir = os.path.join(config['db_dir'], 'rotary_conda_envs')
