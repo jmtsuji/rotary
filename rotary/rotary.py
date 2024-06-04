@@ -158,6 +158,10 @@ def download(args):
     jobs = get_cli_arg(args, 'jobs')
     snakemake_args = get_snakemake_args(args)
 
+    # If there are no snakemake args. Create them so they can be appended to.
+    if not snakemake_args:
+        snakemake_args = []
+
     # Tell snakemake to only run the download rule.
     snakemake_args.append('download')
 
