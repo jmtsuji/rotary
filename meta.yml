@@ -12,15 +12,11 @@ requirements:
   run:
     - python=3.9.*
     - pandas=1.4.*
-    - snakemake=7.*
-    - mamba
-    - wget
-    - psutil=5.9.5
+    - snakemake=8.*
     - biopython=1.81
-    - circlator=1.5.5
-    - flye=2.9
-    - minimap2=2.23
-    - samtools=1.15
+    - mamba=1.5.*
+    - wget=1.21.*
+    - psutil=5.9.*
     - zip=3.*
 
 build:

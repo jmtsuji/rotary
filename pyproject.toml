@@ -16,9 +16,10 @@ readme = "README.md"
 
 dependencies = [
     "pandas ~=1.4",
-    "snakemake ~=7.32",
+    "snakemake ~=8",
+    "biopython ~=1.81",
     "psutil ~=5.9",
-    "biopython ~=1.81"
+
 ]
 
 [tool.setuptools.packages]
