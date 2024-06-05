@@ -15,7 +15,7 @@ license = {file = "LICENSE"}
 readme = "README.md"
 
 dependencies = [
-    "pandas ~=1.4",
+    "pandas ~=1.5",
     "snakemake ~=8",
     "psutil ~=5.9",
 ]

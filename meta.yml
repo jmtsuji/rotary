@@ -11,7 +11,7 @@ requirements:
     - poetry
   run:
     - python=3.11.*
-    - pandas=1.4.*
+    - pandas=1.5.*
     - snakemake=8.*
     - mamba=1.5.*
     - wget=1.21.*
