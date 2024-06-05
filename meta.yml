@@ -19,7 +19,7 @@ requirements:
     - zip=3.*
 
 build:
-  script: poetry install
+  script: pip install .
 
 test:
   commands:
