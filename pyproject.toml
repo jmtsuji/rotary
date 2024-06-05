@@ -17,7 +17,6 @@ readme = "README.md"
 dependencies = [
     "pandas ~=1.4",
     "snakemake ~=8",
-    "biopython ~=1.81",
     "psutil ~=5.9",
 
 ]

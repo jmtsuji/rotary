@@ -13,7 +13,6 @@ requirements:
     - python=3.9.*
     - pandas=1.4.*
     - snakemake=8.*
-    - biopython=1.81
     - mamba=1.5.*
     - wget=1.21.*
     - psutil=5.9.*
