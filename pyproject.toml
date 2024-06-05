@@ -18,7 +18,6 @@ dependencies = [
     "pandas ~=1.4",
     "snakemake ~=8",
     "psutil ~=5.9",
-
 ]
 
 [tool.setuptools.packages]

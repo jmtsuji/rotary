@@ -10,7 +10,7 @@ requirements:
     - python
     - poetry
   run:
-    - python=3.9.*
+    - python=3.11.*
     - pandas=1.4.*
     - snakemake=8.*
     - mamba=1.5.*
