@@ -5,7 +5,7 @@ Created by: Lee Bergstrand (2024)
 
 Description: Code for generating QC reports.
 """
-
+import os.path
 from zipfile import ZipFile
 
 import numpy as np
@@ -83,38 +83,55 @@ def convert_string_fastqc_data_to_numeric(fastqc_dataframe):
         '-', expand=True).astype(np.float64)
 
 
-def generate_fastqc_comparison_table(raw_multiqc_dataframe, direction, start_qc_file_type, end_qc_file_type):
-    cleaned_fastqc_dataframe = sanatize_fastqc_dataframe(raw_multiqc_dataframe)
-
-    direction_column_name = 'Direction'
+def generate_fastqc_comparison_table(single_direction_table, start_qc_file_type, end_qc_file_type):
     qc_stage_column_name = 'Stage'
     name_column_name = 'Sample'
+    percentage_change_name = 'Change (%)'
     before_qc_name = 'Before QC'
     after_qc_name = 'After QC'
 
+    # Filter down the comparison table to just the before and after qc file types.
+    # Replace these file type names with before and after QC.
+    before_and_after_qc_table = single_direction_table[single_direction_table[qc_stage_column_name].isin(
+        [start_qc_file_type, end_qc_file_type])].replace(
+        {start_qc_file_type: before_qc_name, end_qc_file_type: after_qc_name}).set_index(name_column_name)
+
+    before_qc_samples = before_and_after_qc_table[before_and_after_qc_table[qc_stage_column_name] == before_qc_name]
+    after_qc_samples = before_and_after_qc_table[before_and_after_qc_table[qc_stage_column_name] == after_qc_name]
+
+    after_qc_numeric = after_qc_samples.drop(columns=qc_stage_column_name)
+    before_qc_numeric = before_qc_samples.drop(columns=qc_stage_column_name)
+
+    percentage_change = (after_qc_numeric - before_qc_numeric) / before_qc_samples * 100
+    percentage_change[qc_stage_column_name] = percentage_change_name
+
+    final_data = pd.concat([before_and_after_qc_table, percentage_change]).sort_index().set_index(qc_stage_column_name,
+                                                                                                  append=True)
+
+    return final_data
+
+
+def single_direction_fastqc_dataframe(cleaned_fastqc_dataframe, direction):
+    direction_column_name = 'Direction'
     # Filter down the comparison table to a certain FASTQ file direction.
     single_direction_table = cleaned_fastqc_dataframe[cleaned_fastqc_dataframe[direction_column_name] == direction]
     single_direction_table = single_direction_table.drop(columns=direction_column_name)
+    return single_direction_table
 
-    # Filter down the comparison table to just the before and after qc file types.
-    # Replace these file type names with before and after QC.
-    comparison_table = single_direction_table[single_direction_table[qc_stage_column_name].isin(
-        [start_qc_file_type, end_qc_file_type])].replace(
-        {start_qc_file_type: before_qc_name, end_qc_file_type: after_qc_name})
 
-    before_qc_samples = comparison_table[comparison_table[qc_stage_column_name] == before_qc_name].set_index(
-        name_column_name)
-    after_qc_samples = comparison_table[comparison_table[qc_stage_column_name] == after_qc_name].set_index(
-        name_column_name)
+def generate_fastqc_summaries(input_multiqc_files, summary_output_dir, out_file_name, read_type):
+    fastqc_data = pd.concat([extract_table_data_from_multiqc_zip(multiqc_path) for multiqc_path in input_multiqc_files])
+    sanatized_fastqc_data = sanatize_fastqc_dataframe(fastqc_data)
 
-    before_qc_samples.drop(columns=qc_stage_column_name, inplace=True)
-    after_qc_samples.drop(columns=qc_stage_column_name, inplace=True)
+    if read_type == 'short':
+        write_fastqc_summary_tsv(sanatized_fastqc_data, 'R1', summary_output_dir, out_file_name)
+        write_fastqc_summary_tsv(sanatized_fastqc_data, 'R2', summary_output_dir, out_file_name)
+    else:
+        write_fastqc_summary_tsv(sanatized_fastqc_data, 'long', summary_output_dir, out_file_name)
 
-    percentage_change = (after_qc_samples - before_qc_samples) / before_qc_samples * 100
-    percentage_change[qc_stage_column_name] = 'Change (%)'
 
-    comparison_table.set_index(name_column_name, inplace=True)
-    final_data = pd.concat([comparison_table, percentage_change]).sort_index().reset_index().set_index(
-        [name_column_name, qc_stage_column_name]).transpose()
-
-    return final_data
+def write_fastqc_summary_tsv(cleaned_fastqc_data, direction, summary_output_dir, out_file_name):
+    output_path = os.path.join(summary_output_dir, f'{out_file_name}_{direction}.tsv')
+    fastqc_dataframe = single_direction_fastqc_dataframe(cleaned_fastqc_data, direction)
+    comparison_data = generate_fastqc_comparison_table(fastqc_dataframe, 'raw', '_filter')
+    comparison_data.to_csv(output_path, sep='\t', index=True)
