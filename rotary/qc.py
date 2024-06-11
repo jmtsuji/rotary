@@ -119,15 +119,15 @@ def single_direction_fastqc_dataframe(cleaned_fastqc_dataframe, direction):
     return single_direction_table
 
 
-def generate_fastqc_summaries(input_multiqc_files, summary_output_dir, out_file_name, read_type):
+def generate_fastqc_summary(input_multiqc_files, summary_output_dir, out_file_base_name, read_type):
     fastqc_data = pd.concat([extract_table_data_from_multiqc_zip(multiqc_path) for multiqc_path in input_multiqc_files])
     sanatized_fastqc_data = sanatize_fastqc_dataframe(fastqc_data)
 
     if read_type == 'short':
-        write_fastqc_summary_tsv(sanatized_fastqc_data, 'R1', summary_output_dir, out_file_name)
-        write_fastqc_summary_tsv(sanatized_fastqc_data, 'R2', summary_output_dir, out_file_name)
+        write_fastqc_summary_tsv(sanatized_fastqc_data, 'R1', summary_output_dir, out_file_base_name)
+        write_fastqc_summary_tsv(sanatized_fastqc_data, 'R2', summary_output_dir, out_file_base_name)
     else:
-        write_fastqc_summary_tsv(sanatized_fastqc_data, 'long', summary_output_dir, out_file_name)
+        write_fastqc_summary_tsv(sanatized_fastqc_data, 'long', summary_output_dir, out_file_base_name)
 
 
 def write_fastqc_summary_tsv(cleaned_fastqc_data, direction, summary_output_dir, out_file_name):
