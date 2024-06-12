@@ -472,6 +472,8 @@ rule generate_long_aggregate_qc_stats:
         expand("{sample}/qc/qc_stats/long/{sample}_long_multiqc_report_data.zip", sample=SAMPLE_NAMES)
     output:
         'stats/qc/before_and_after_qc_sequence_stats_long.tsv'
+    benchmark:
+        "/benchmarks/qc/qc_long_aggregate_stats.benchmark.txt"
     run:
         long_raw_fastqc_data = extract_and_combine_sample_fastqc_multiqc_data(input)
         long_sanitized_fastqc_data = sanitize_fastqc_data(long_raw_fastqc_data)
@@ -484,6 +486,8 @@ rule generate_short_aggregate_qc_stats:
     output:
         left_qc_stats='stats/qc/before_and_after_qc_sequence_stats_short_R1.tsv',
         right_qc_stats='stats/qc/before_and_after_qc_sequence_stats_short_R2.tsv'
+    benchmark:
+        "/benchmarks/qc/qc_short_aggregate_stats.benchmark.txt"
     run:
         short_raw_fastqc_data = extract_and_combine_sample_fastqc_multiqc_data(input)
         short_sanitized_fastqc_data = sanitize_fastqc_data(short_raw_fastqc_data)
