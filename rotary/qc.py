@@ -5,11 +5,18 @@ Created by: Lee Bergstrand (2024)
 
 Description: Code for generating QC reports.
 """
-import os.path
 from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import CategoricalDtype
+
+PERCENTAGE_CHANGE_NAME = 'Change (%)'
+BEFORE_QC_NAME = 'Before QC'
+AFTER_QC_NAME = 'After QC'
+
+before_after_categorical_type = CategoricalDtype(categories=[BEFORE_QC_NAME, AFTER_QC_NAME, PERCENTAGE_CHANGE_NAME],
+                                                 ordered=True)
 
 
 def extract_table_data_from_multiqc_zip(multiqc_zip_path, table_filename='multiqc_fastqc.txt', delimiter='\t'):
@@ -121,28 +128,31 @@ def generate_fastqc_before_and_after_comparison_data(single_direction_fastqc_dat
     """
     qc_stage_column_name = 'Stage'
     name_column_name = 'Sample'
-    percentage_change_name = 'Change (%)'
-    before_qc_name = 'Before QC'
-    after_qc_name = 'After QC'
 
     # Filter down the comparison table to just the before and after qc file types.
     # Replace these file type names with before and after QC.
     before_and_after_qc_table = single_direction_fastqc_data[single_direction_fastqc_data[qc_stage_column_name].isin(
         [start_file_type, end_file_type])].replace(
-        {start_file_type: before_qc_name, end_file_type: after_qc_name}).set_index(name_column_name)
+        {start_file_type: BEFORE_QC_NAME, end_file_type: AFTER_QC_NAME}).set_index(name_column_name)
 
-    before_qc_samples = before_and_after_qc_table[before_and_after_qc_table[qc_stage_column_name] == before_qc_name]
-    after_qc_samples = before_and_after_qc_table[before_and_after_qc_table[qc_stage_column_name] == after_qc_name]
+    # Split the single direction DataFrame into before and after QC DataFrames.
+    before_qc_samples = before_and_after_qc_table[before_and_after_qc_table[qc_stage_column_name] == BEFORE_QC_NAME]
+    after_qc_samples = before_and_after_qc_table[before_and_after_qc_table[qc_stage_column_name] == AFTER_QC_NAME]
 
     after_qc_numeric = after_qc_samples.drop(columns=qc_stage_column_name)
     before_qc_numeric = before_qc_samples.drop(columns=qc_stage_column_name)
 
+    # Calculate percentage change as a new dataframe.
     percentage_change = (after_qc_numeric - before_qc_numeric) / before_qc_samples * 100
-    percentage_change[qc_stage_column_name] = percentage_change_name
+    percentage_change[qc_stage_column_name] = PERCENTAGE_CHANGE_NAME
 
-    final_data = pd.concat([before_and_after_qc_table, percentage_change]).sort_index().set_index(qc_stage_column_name,
-                                                                                                  append=True)
-    return final_data
+    # Join before, after, and percentage change data into a single dataframe.
+    final_data = pd.concat([before_and_after_qc_table, percentage_change])
+    # Apply a new ordered categorical type that goes before, after, then percentage change.
+    final_data[qc_stage_column_name] = final_data[qc_stage_column_name].astype(before_after_categorical_type)
+
+    # Add the Stage column to the index, sort the DataFrame and then return it.
+    return final_data.set_index(qc_stage_column_name, append=True).sort_index()
 
 
 def generate_single_direction_fastqc_data(sanitized_fastqc_data: pd.DataFrame, direction):
