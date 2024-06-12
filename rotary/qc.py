@@ -30,7 +30,7 @@ def extract_table_data_from_multiqc_zip(multiqc_zip_path, table_filename='multiq
                 return dataframe
 
 
-def sanitize_fastqc_dataframe(raw_fastqc_data: pd.DataFrame, file_types=None, data_columns_to_include=None):
+def sanitize_fastqc_data(raw_fastqc_data: pd.DataFrame, file_types=None, data_columns_to_include=None):
     """
     This method performs various cleaning operations on a raw FastQC DataFrame.
     Various columns are converted from strings to numeric.
@@ -145,54 +145,43 @@ def generate_fastqc_before_and_after_comparison_data(single_direction_fastqc_dat
     return final_data
 
 
-def generate_single_direction_fastqc_dataframe(cleaned_fastqc_data: pd.DataFrame, direction):
+def generate_single_direction_fastqc_data(sanitized_fastqc_data: pd.DataFrame, direction):
     """
     Generate a DataFrame containing only the data for a single FASTQ direction from the cleaned FASTQC data.
 
-    :param cleaned_fastqc_data: The cleaned FASTQC DataFrame, containing information for one or more directions.
+    :param sanitized_fastqc_data: The cleaned FASTQC DataFrame, containing information for one or more directions.
     :param direction: The direction to filter the data to.
     :return: A DataFrame containing only the data for the specified direction.
     """
     direction_column_name = 'Direction'
     # Filter down the comparison table to a certain FASTQ file direction.
-    single_direction_table = cleaned_fastqc_data[cleaned_fastqc_data[direction_column_name] == direction]
+    single_direction_table = sanitized_fastqc_data[sanitized_fastqc_data[direction_column_name] == direction]
     single_direction_table = single_direction_table.drop(columns=direction_column_name)
     return single_direction_table
 
 
-def write_fastqc_summary_tsvs(sample_multiqc_paths, summary_output_dir, out_file_base, read_type):
+def write_fastqc_summary_tsv(sanitized_fastqc_data, output_tsv_path, read_direction):
     """
     Writes summary TSV files for FastQC data.
-    Writes a single TSV file for long input files.
-    Writes two TSV files for short input files.
-    The two TSV files contain left or right reads, respectively.
 
-    :param sample_multiqc_paths: List of paths to multiqc files for each sample.
-    :param summary_output_dir: Directory where the summary TSV files will be written.
-    :param out_file_base: Base name for the output TSV files.
-    :param read_type: Type of read ('short' or 'long').
+    :param sanitized_fastqc_data: The cleaned FASTQC DataFrame, containing information for one or more directions.
+    :param output_tsv_path: The output path to write the TSV to.
+    :param read_direction: Type of read ('R1', 'R2', or 'long').
     """
-    raw_fastqc_data = pd.concat([extract_table_data_from_multiqc_zip(path) for path in sample_multiqc_paths])
-    sanitized_fastqc_data = sanitize_fastqc_dataframe(raw_fastqc_data)
 
-    if read_type == 'short':
-        write_before_and_after_comparison_tsv(sanitized_fastqc_data, 'R1', summary_output_dir, out_file_base)
-        write_before_and_after_comparison_tsv(sanitized_fastqc_data, 'R2', summary_output_dir, out_file_base)
-    else:
-        write_before_and_after_comparison_tsv(sanitized_fastqc_data, 'long', summary_output_dir, out_file_base)
+    single_direction_fastqc_data = generate_single_direction_fastqc_data(sanitized_fastqc_data, read_direction)
+    comparison_data = generate_fastqc_before_and_after_comparison_data(single_direction_fastqc_data, 'raw', '_filter')
+    comparison_data.to_csv(output_tsv_path, sep='\t', index=True)
 
 
-def write_before_and_after_comparison_tsv(cleaned_fastqc_data: pd.DataFrame, direction, summary_output_dir,
-                                          out_file_base):
+def extract_and_combine_sample_fastqc_multiqc_data(sample_fastqc_multiqc_paths):
     """
-    This method writes a before and after comparison TSV file for the specified direction using the cleaned FastQC data.
+    Extract the FastQC data from multiple MultiQC zip files and combine it into a single DataFrame.
 
-    :param cleaned_fastqc_data: The cleaned FASTQC DataFrame.
-    :param direction: The direction of the data to filter to (e.g., 'R1', 'R2' or 'long').
-    :param summary_output_dir: The directory where the summary output file will be saved.
-    :param out_file_base: The base file name for the summary output file.
+    :param sample_fastqc_multiqc_paths: List of file paths to the MultiQC reports for each sample.
+    :return: Combined FastQC DataFrame for multiple samples.
     """
-    output_path = os.path.join(summary_output_dir, f'{out_file_base}_{direction}.tsv')
-    fastqc_dataframe = generate_single_direction_fastqc_dataframe(cleaned_fastqc_data, direction)
-    comparison_data = generate_fastqc_before_and_after_comparison_data(fastqc_dataframe, 'raw', '_filter')
-    comparison_data.to_csv(output_path, sep='\t', index=True)
+    return pd.concat([extract_table_data_from_multiqc_zip(path) for path in sample_fastqc_multiqc_paths])
+
+
+

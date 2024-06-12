@@ -6,6 +6,9 @@ import itertools
 import pandas as pd
 from pungi.utils import symlink_or_compress, is_config_parameter_true
 
+from rotary.qc import write_fastqc_summary_tsv, sanitize_fastqc_data, \
+    extract_and_combine_sample_fastqc_multiqc_data
+
 CONTAMINATION_NCBI_ACCESSIONS = config.get("contamination_references_ncbi_accessions")
 CUSTOM_CONTAMINATION_FILEPATHS = config.get("contamination_references_custom_filepaths")
 
@@ -335,7 +338,6 @@ rule short_read_contamination_filter:
           2> {log}
         """
 
-
 rule finalize_qc_short:
     """
     The conditional statements in this rule control whether or not contaminant filtration is performed.
@@ -464,6 +466,35 @@ rule run_multiqc:
         --zip-data-dir {params.qc_stats_dir} > {log} 2>&1
         """
 
+
+rule generate_long_aggregate_qc_stats:
+    input:
+        expand("{sample}/qc/qc_stats/long/{sample}_long_multiqc_report_data.zip", sample=SAMPLE_NAMES)
+    output:
+        'stats/qc/before_and_after_qc_sequence_stats_long.tsv'
+    benchmark:
+        "{sample}/benchmarks/qc/aggregate_long_stats.benchmark.txt"
+    run:
+        long_raw_fastqc_data = extract_and_combine_sample_fastqc_multiqc_data(input)
+        long_sanitized_fastqc_data = sanitize_fastqc_data(long_raw_fastqc_data)
+        write_fastqc_summary_tsv(long_sanitized_fastqc_data, output[0], 'long')
+
+
+rule generate_short_aggregate_qc_stats:
+    input:
+        expand("{sample}/qc/qc_stats/short/{sample}_short_multiqc_report_data.zip", sample=SAMPLE_NAMES)
+    output:
+        left_qc_stats='stats/qc/before_and_after_qc_sequence_stats_short_R1.tsv',
+        right_qc_stats='stats/qc/before_and_after_qc_sequence_stats_short_R2.tsv'
+    benchmark:
+        "{sample}/benchmarks/qc/aggregate_short_stats.benchmark.txt"
+    run:
+        short_raw_fastqc_data = extract_and_combine_sample_fastqc_multiqc_data(input)
+        short_sanitized_fastqc_data = sanitize_fastqc_data(short_raw_fastqc_data)
+        write_fastqc_summary_tsv(short_sanitized_fastqc_data, output[0], 'R1')
+        write_fastqc_summary_tsv(short_sanitized_fastqc_data, output[1],'R2')
+
+
 rule qc_stats:
     input:
         multqc_short_report=expand("{sample}/qc/qc_stats/short/{sample}_short_multiqc_report.html", sample=SAMPLE_NAMES) if POLISH_WITH_SHORT_READS else [],
@@ -471,9 +502,19 @@ rule qc_stats:
     output:
         temp(touch("checkpoints/qc_stats"))
 
+rule aggregate_qc_stats:
+    input:
+        left_short_qc_stats = 'stats/qc/before_and_after_qc_sequence_stats_short_R1.tsv' if POLISH_WITH_SHORT_READS else [],
+        right_short_qc_stats = 'stats/qc/before_and_after_qc_sequence_stats_short_R2.tsv' if POLISH_WITH_SHORT_READS else [],
+        long_qc_stats = 'stats/qc/before_and_after_qc_sequence_stats_long.tsv'
+    output:
+        temp(touch("checkpoints/aggregate_qc_stats"))
+
 rule qc:
     input:
         qc=["checkpoints/qc_long"] if POLISH_WITH_SHORT_READS == False else ["checkpoints/qc_long", "checkpoints/qc_short"],
-        qc_stats="checkpoints/qc_stats"
+        qc_stats="checkpoints/qc_stats",
+        aggregate_qc_stats="checkpoints/aggregate_qc_stats"
+
     output:
         temp(touch("checkpoints/qc"))
