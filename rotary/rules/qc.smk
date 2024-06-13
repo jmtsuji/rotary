@@ -424,7 +424,7 @@ rule run_fastq_short:
         fastqc -o {params.outdir} -t {threads} {input} >{log} 2>&1
         """
 
-rule run_multiqc:
+rule run_sample_qc_multiqc:
     input:
         "checkpoints/qc_stats_{type}_{sample}"
     output:
