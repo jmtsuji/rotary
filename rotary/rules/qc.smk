@@ -453,7 +453,8 @@ def generate_fastqc_file_list(wildcards):
 
     return fastqc_files
 
-rule run_multiqc:
+  
+rule run_sample_qc_multiqc:
     input:
         generate_fastqc_file_list
     output:
