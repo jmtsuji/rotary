@@ -6,6 +6,9 @@ import itertools
 import pandas as pd
 from pungi.utils import symlink_or_compress, is_config_parameter_true
 
+from rotary.qc import write_fastqc_summary_tsv, sanitize_fastqc_data, \
+    extract_and_combine_sample_fastqc_multiqc_data
+
 CONTAMINATION_NCBI_ACCESSIONS = config.get("contamination_references_ncbi_accessions")
 CUSTOM_CONTAMINATION_FILEPATHS = config.get("contamination_references_custom_filepaths")
 
@@ -24,6 +27,8 @@ ZENODO_VERSION = "10087395"
 DB_DIR_PATH = config.get('db_dir')
 
 KEEP_QC_READ_FILES = is_config_parameter_true(config,'keep_final_qc_read_files')
+PERFORM_ADAPTER_TRIMMING = is_config_parameter_true(config,'perform_adapter_trimming')
+OVERLAP_BASED_TRIMMING = is_config_parameter_true(config,'overlap_based_trimming')
 
 # SAMPLE_NAMES and POLISH_WITH_SHORT_READS are instantiated in rotary.smk
 
@@ -78,6 +83,7 @@ rule download_ncbi_contamination_reference:
         fi
         """
 
+
 rule set_up_custom_contamination_references:
     output:
         expand(os.path.join(DB_DIR_PATH, 'contamination_references', 'custom', '{contaminant_name}.fna.gz'),
@@ -86,11 +92,19 @@ rule set_up_custom_contamination_references:
         for name, path in zip(CUSTOM_CONTAMINATION_FILE_NAMES,CUSTOM_CONTAMINATION_FILEPATHS):
             symlink_or_compress(path, os.path.join(DB_DIR_PATH, 'contamination_references', 'custom', f'{name}.fna.gz'))
 
+rule qc_download:
+    input:
+        short_read_adapters=os.path.join(DB_DIR_PATH, "adapters.fasta"),
+        contamination_references=expand(os.path.join(DB_DIR_PATH, 'contamination_references', 'ncbi',
+            '{accession}.fna.gz'), accession=CONTAMINATION_NCBI_ACCESSIONS)
+    output:
+        touch(os.path.join(DB_DIR_PATH,"checkpoints","qc_downloaded"))
+
 rule nanopore_qc_filter:
     input:
-        "{sample}/raw/{sample}_long.fastq.gz"
+        "{sample}/raw/long/{sample}_long.fastq.gz"
     output:
-        temp("{sample}/qc/long/{sample}_nanopore_qc.fastq.gz")
+        temp("{sample}/qc/long/{sample}_filter_long.fastq.gz")
     conda:
         "../envs/mapping.yaml"
     log:
@@ -113,7 +127,7 @@ rule nanopore_qc_filter:
 
 rule qc_long_length_hist:
     input:
-        "{sample}/qc/long/{sample}_nanopore_qc.fastq.gz"
+        "{sample}/qc/long/{sample}_filter_long.fastq.gz"
     output:
         "{sample}/qc/long/{sample}_length_hist.tsv"
     conda:
@@ -165,7 +179,7 @@ rule qc_long_length_stats:
 
 rule finalize_qc_long:
     input:
-        "{sample}/qc/long/{sample}_nanopore_qc.fastq.gz"
+        "{sample}/qc/long/{sample}_filter_long.fastq.gz"
     output:
         "{sample}/qc/{sample}_qc_long.fastq.gz" if KEEP_QC_READ_FILES else temp("{sample}/qc/{sample}_qc_long.fastq.gz")
     shell:
@@ -188,8 +202,8 @@ rule short_read_reformat:
     nucleotide characters). Threads are locked at a maximum of 4 because this code is IO limited.
     """
     input:
-        short_r1 = "{sample}/raw/{sample}_R1.fastq.gz",
-        short_r2 = "{sample}/raw/{sample}_R2.fastq.gz"
+        short_r1 = "{sample}/raw/short/{sample}_R1.fastq.gz",
+        short_r2 = "{sample}/raw/short/{sample}_R2.fastq.gz"
     output:
         short_reformat_r1 = temp("{sample}/qc/short/{sample}_reformat_R1.fastq.gz"),
         short_reformat_r2 = temp("{sample}/qc/short/{sample}_reformat_R2.fastq.gz"),
@@ -234,7 +248,7 @@ rule short_read_adapter_trimming:
     params:
         adapter_trimming_kmer_length = config.get("adapter_trimming_kmer_length"),
         minimum_detectable_adapter_length_on_read_end = config.get("minimum_detectable_adapter_length_on_read_end"),
-        trim_adapters_by_overlap = "t" if str(config.get("overlap_based_trimming")).lower() == "true" else "f",
+        trim_adapters_by_overlap = "t" if OVERLAP_BASED_TRIMMING else "f",
         min_read_length = config.get("minimum_read_length_adapter_trim")
     threads:
         config.get("threads", 1)
@@ -258,9 +272,10 @@ rule short_read_quality_trimming:
     The conditional statements in the input field select whether to skip adapter trimming based on the config file.
     Note: if quality_trim_direction is set as "f", the reads are just passed through this rule and not trimmed.
     """
+
     input:
-        short_r1 = "{sample}/qc/short/{sample}_adapter_trim_R1.fastq.gz" if str(config.get("perform_adapter_trimming")).lower() == 'true' else "{sample}/qc/short/{sample}_reformat_R1.fastq.gz",
-        short_r2 = "{sample}/qc/short/{sample}_adapter_trim_R2.fastq.gz" if str(config.get("perform_adapter_trimming")).lower() == 'true' else "{sample}/qc/short/{sample}_reformat_R2.fastq.gz"
+        short_r1 = "{sample}/qc/short/{sample}_adapter_trim_R1.fastq.gz" if PERFORM_ADAPTER_TRIMMING else "{sample}/qc/short/{sample}_reformat_R1.fastq.gz",
+        short_r2 = "{sample}/qc/short/{sample}_adapter_trim_R2.fastq.gz" if PERFORM_ADAPTER_TRIMMING else "{sample}/qc/short/{sample}_reformat_R2.fastq.gz"
     output:
         short_r1 = temp("{sample}/qc/short/{sample}_quality_trim_R1.fastq.gz"),
         short_r2 = temp("{sample}/qc/short/{sample}_quality_trim_R2.fastq.gz"),
@@ -332,14 +347,13 @@ rule short_read_contamination_filter:
           2> {log}
         """
 
-
 rule finalize_qc_short:
     """
     The conditional statements in this rule control whether or not contaminant filtration is performed.
     """
     input:
-        short_r1 = "{sample}/qc/short/{sample}_filter_R1.fastq.gz" if CONTAMINANT_REFERENCE_GENOMES == True else "{sample}/qc/short/{sample}_quality_trim_R1.fastq.gz",
-        short_r2 = "{sample}/qc/short/{sample}_filter_R2.fastq.gz" if CONTAMINANT_REFERENCE_GENOMES == True else "{sample}/qc/short/{sample}_quality_trim_R2.fastq.gz"
+        short_r1 = "{sample}/qc/short/{sample}_filter_R1.fastq.gz" if CONTAMINANT_REFERENCE_GENOMES else "{sample}/qc/short/{sample}_quality_trim_R1.fastq.gz",
+        short_r2 = "{sample}/qc/short/{sample}_filter_R2.fastq.gz" if CONTAMINANT_REFERENCE_GENOMES else "{sample}/qc/short/{sample}_quality_trim_R2.fastq.gz"
     output:
         short_final_r1="{sample}/qc/{sample}_qc_R1.fastq.gz" if KEEP_QC_READ_FILES else temp("{sample}/qc/{sample}_qc_R1.fastq.gz"),
         short_final_r2="{sample}/qc/{sample}_qc_R2.fastq.gz" if KEEP_QC_READ_FILES else temp("{sample}/qc/{sample}_qc_R2.fastq.gz")
@@ -358,75 +372,91 @@ rule qc_short:
         temp(touch("checkpoints/qc_short"))
 
 
-FASTQC_OUTPUTS = ['_fastqc.html', '_fastqc.zip']
-
-rule run_fastqc_long:
+rule run_fastqc_raw_reads:
     input:
-        raw_long_reads="{sample}/raw/{sample}_long.fastq.gz",
-        qced_long_reads="{sample}/qc/long/{sample}_nanopore_qc.fastq.gz",
+        # wildcard direction_or_long can be long, R1, or R2
+        "{sample}/raw/{read_type}/{sample}_{direction_or_long}.fastq.gz"
     output:
-        checkpoints=temp(touch("checkpoints/qc_stats_long_{sample}")),
-        raw_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_long{output}",
-            output=FASTQC_OUTPUTS),
-        qced_long_reads_fastqc=expand("{{sample}}/qc/qc_stats/long/{{sample}}_nanopore_qc{output}",
-            output=FASTQC_OUTPUTS)
+        fastqc_html=temp("{sample}/qc/qc_stats/{read_type}/{sample}_{direction_or_long}_fastqc.html"),
+        fastqc_zip=temp("{sample}/qc/qc_stats/{read_type}/{sample}_{direction_or_long}_fastqc.zip")
     conda:
         "../envs/qc.yaml"
     log:
-        "{sample}/logs/qc/qc_stats_long.log"
+        "{sample}/logs/qc/qc_stats_{read_type}_{direction_or_long}.log"
     benchmark:
-        "{sample}/benchmarks/qc/short/qc_stats_long.txt"
+        "{sample}/benchmarks/qc/short/qc_stats_{read_type}_{direction_or_long}.txt"
     params:
-        outdir="{sample}/qc/qc_stats/long"
-    threads:
-        2
+        outdir="{sample}/qc/qc_stats/{read_type}"
     resources:
-        mem_mb=1024
+        mem_mb = lambda wildcards: 1024 if wildcards.read_type == 'long' else 512 # More memory when dealing with long reads
     shell:
         """
         mkdir -p {params.outdir}
-        fastqc -o {params.outdir} --memory {resources.mem_mb} -t {threads} {input} > {log} 2>&1
+        fastqc -o {params.outdir} --memory {resources.mem_mb} {input} > {log} 2>&1
         """
 
-FASTQ_DIRECTIONS = ['R1', 'R2']
-QC_SHORT_FILE_TYPES = ['_reformat_', '_adapter_trim_', '_quality_trim_']
-
-rule run_fastq_short:
+rule run_fastqc_quality_controlled_reads:
     input:
-        raw_short_reads = expand("{{sample}}/raw/{{sample}}_{direction}.fastq.gz",
-            direction=FASTQ_DIRECTIONS),
-        qced_short_reads = expand("{{sample}}/qc/short/{{sample}}{file_type}{direction}.fastq.gz",
-            file_type=QC_SHORT_FILE_TYPES,
-            direction=FASTQ_DIRECTIONS),
-        short_contamination_filter=expand("{{sample}}/qc/short/{{sample}}_filter_{direction}.fastq.gz",
-            direction=FASTQ_DIRECTIONS) if CONTAMINANT_REFERENCE_GENOMES else[]
+        # wildcard direction_or_long can be long, R1, or R2
+        "{sample}/qc/{read_type}/{sample}{file_type}{direction_or_long}.fastq.gz"
     output:
-        checkpoints = temp(touch("checkpoints/qc_stats_short_{sample}")),
-        raw_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}_{direction}{output}",
-            direction=FASTQ_DIRECTIONS, output=FASTQC_OUTPUTS),
-        qced_short_reads = expand("{{sample}}/qc/qc_stats/short/{{sample}}{file_type}{direction}{output}",
-            file_type=QC_SHORT_FILE_TYPES, direction=FASTQ_DIRECTIONS, output=FASTQC_OUTPUTS),
-        short_contamination_filter = expand("{{sample}}/qc/qc_stats/short/{{sample}}_filter_{direction}{output}",
-            direction=FASTQ_DIRECTIONS, output=FASTQC_OUTPUTS) if CONTAMINANT_REFERENCE_GENOMES else[]
+        fastqc_html=temp("{sample}/qc/qc_stats/{read_type}/{sample}{file_type}{direction_or_long}_fastqc.html"),
+        fastqc_zip=temp("{sample}/qc/qc_stats/{read_type}/{sample}{file_type}{direction_or_long}_fastqc.zip")
     conda:
         "../envs/qc.yaml"
     log:
-        "{sample}/logs/qc/qc_stats_short.log"
+        "{sample}/logs/qc/qc_stats_{read_type}_{file_type}_{direction_or_long}.log"
     benchmark:
-        "{sample}/benchmarks/qc/short/qc_stats_short.txt"
+        "{sample}/benchmarks/qc/short/qc_stats_{read_type}_{file_type}_{direction_or_long}.txt"
     params:
-        outdir="{sample}/qc/qc_stats/short"
-    threads:
-        config.get("threads",1)
+        outdir="{sample}/qc/qc_stats/{read_type}"
+    resources:
+        mem_mb=lambda wildcards: 1024 if wildcards.read_type == 'long' else 512  # More memory when dealing with long reads
     shell:
         """
         mkdir -p {params.outdir}
-        fastqc -o {params.outdir} -t {threads} {input} >{log} 2>&1
+        fastqc -o {params.outdir} --memory {resources.mem_mb} {input} > {log} 2>&1
         """
 
+def generate_fastqc_file_list(wildcards):
+    """
+    Generate a list of FastQC file paths based on the specified parameters.
+    :param wildcards: Contains the wildcards used for generating the file paths.
+    :return: A list of file paths for the required output FastQC files
+    """
+    fastqc_outputs = ['fastqc.html', 'fastqc.zip'] # Fastqc outputs html and zip files for each input fastq file.
+    short_read_directions = ['R1', 'R2']
+    raw_file_type = '_' # Raw fastq files have no file type and only possess a dash.
+    filter_file_type = '_filter_' # Filter is shared between both short and long read data.
+
+    # Generate the list of fastqc output files for the short read fastq files.
+    if wildcards.type == 'short':
+        qc_short_file_types = [raw_file_type, '_reformat_', '_quality_trim_']
+        short_file_path_format = "{{sample}}/qc/qc_stats/short/{{sample}}{file_type}{direction}_{output}"
+
+        # Add additional short read fastq files generated by decontamination and adapter trimming to the list.
+        if CONTAMINANT_REFERENCE_GENOMES:
+            qc_short_file_types.append(filter_file_type)
+        if PERFORM_ADAPTER_TRIMMING:
+            qc_short_file_types.append('_adapter_trim_')
+
+        fastqc_files = []
+        for file_type in qc_short_file_types:
+            fastqc_files += expand(short_file_path_format, file_type=file_type, direction=short_read_directions,
+                output=fastqc_outputs)
+
+    # Generate the list of fastqc output files for the long read fastq files.
+    else:
+        long_file_path_format = "{{sample}}/qc/qc_stats/long/{{sample}}{file_type}long_{output}"
+        qc_long_file_types = [raw_file_type, filter_file_type]
+        fastqc_files = expand(long_file_path_format, file_type=qc_long_file_types, output=fastqc_outputs)
+
+    return fastqc_files
+
+  
 rule run_sample_qc_multiqc:
     input:
-        "checkpoints/qc_stats_{type}_{sample}"
+        generate_fastqc_file_list
     output:
         multqc_report="{sample}/qc/qc_stats/{type}/{sample}_{type}_multiqc_report.html",
         multqc_report_data="{sample}/qc/qc_stats/{type}/{sample}_{type}_multiqc_report_data.zip"
@@ -446,6 +476,35 @@ rule run_sample_qc_multiqc:
         --zip-data-dir {params.qc_stats_dir} > {log} 2>&1
         """
 
+
+rule generate_long_aggregate_qc_stats:
+    input:
+        expand("{sample}/qc/qc_stats/long/{sample}_long_multiqc_report_data.zip", sample=SAMPLE_NAMES)
+    output:
+        'stats/qc/before_and_after_qc_sequence_stats_long.tsv'
+    benchmark:
+        "benchmarks/qc/qc_long_aggregate_stats.benchmark.txt"
+    run:
+        long_raw_fastqc_data = extract_and_combine_sample_fastqc_multiqc_data(input)
+        long_sanitized_fastqc_data = sanitize_fastqc_data(long_raw_fastqc_data)
+        write_fastqc_summary_tsv(long_sanitized_fastqc_data, output[0], 'long')
+
+
+rule generate_short_aggregate_qc_stats:
+    input:
+        expand("{sample}/qc/qc_stats/short/{sample}_short_multiqc_report_data.zip", sample=SAMPLE_NAMES)
+    output:
+        left_qc_stats='stats/qc/before_and_after_qc_sequence_stats_short_R1.tsv',
+        right_qc_stats='stats/qc/before_and_after_qc_sequence_stats_short_R2.tsv'
+    benchmark:
+        "benchmarks/qc/qc_short_aggregate_stats.benchmark.txt"
+    run:
+        short_raw_fastqc_data = extract_and_combine_sample_fastqc_multiqc_data(input)
+        short_sanitized_fastqc_data = sanitize_fastqc_data(short_raw_fastqc_data)
+        write_fastqc_summary_tsv(short_sanitized_fastqc_data, output[0], 'R1')
+        write_fastqc_summary_tsv(short_sanitized_fastqc_data, output[1],'R2')
+
+
 rule qc_stats:
     input:
         multqc_short_report=expand("{sample}/qc/qc_stats/short/{sample}_short_multiqc_report.html", sample=SAMPLE_NAMES) if POLISH_WITH_SHORT_READS else [],
@@ -453,9 +512,19 @@ rule qc_stats:
     output:
         temp(touch("checkpoints/qc_stats"))
 
+rule aggregate_qc_stats:
+    input:
+        left_short_qc_stats = 'stats/qc/before_and_after_qc_sequence_stats_short_R1.tsv' if POLISH_WITH_SHORT_READS else [],
+        right_short_qc_stats = 'stats/qc/before_and_after_qc_sequence_stats_short_R2.tsv' if POLISH_WITH_SHORT_READS else [],
+        long_qc_stats = 'stats/qc/before_and_after_qc_sequence_stats_long.tsv'
+    output:
+        temp(touch("checkpoints/aggregate_qc_stats"))
+
 rule qc:
     input:
         qc=["checkpoints/qc_long"] if POLISH_WITH_SHORT_READS == False else ["checkpoints/qc_long", "checkpoints/qc_short"],
-        qc_stats="checkpoints/qc_stats"
+        qc_stats="checkpoints/qc_stats",
+        aggregate_qc_stats="checkpoints/aggregate_qc_stats"
+
     output:
         temp(touch("checkpoints/qc"))

@@ -10,7 +10,8 @@ import os
 
 from pungi.dataset import generate_dataset_from_fastq_directory, Dataset
 from pungi.run import setup_run_directory, run_snakemake_workflow, load_yaml_config, get_snakemake_args, \
-    validate_yaml_config_against_default
+    validate_yaml_config_against_default, modify_config_with_available_computational_resources, setup_database_dir, \
+    dump_yaml_config
 from pungi.sample import SequencingFile, auto_create_sample_from_files
 from pungi.utils import get_cli_arg_path, get_cli_arg, check_for_files, get_config_path
 
@@ -42,6 +43,8 @@ def main():
         run_one(args)
     elif hasattr(args, 'init'):
         init(args)
+    elif hasattr(args, 'download'):
+        download(args)
     else:
         parser.print_help()
 
@@ -136,6 +139,45 @@ def init(args):
     dataset.create_sample_tsv(output_dir_path, header=sample_tsv_header_fields)
 
 
+def download(args):
+    """
+    Runs code for the download command-line mode. Downloads database files required by rotary.
+
+    :param args: The command-line arguments.
+    """
+    config_path = get_config_path(args, default_config_path=provided_config_path)
+    config = load_yaml_config(config_path)
+
+    # modify config to use available CPU and RAM.
+    config = modify_config_with_available_computational_resources(config)
+
+    output_dir_path = os.getcwd()
+
+    config = setup_database_dir(args, config, output_dir_path)
+
+    jobs = get_cli_arg(args, 'jobs')
+    snakemake_args = get_snakemake_args(args)
+
+    # If there are no snakemake args. Create them so they can be appended to.
+    if not snakemake_args:
+        snakemake_args = []
+
+    # Tell snakemake to only run the download rule.
+    snakemake_args.append('download')
+
+    conda_env_dir = os.path.join(config['db_dir'], 'rotary_conda_envs')
+
+    output_config_path = os.path.join(output_dir_path, 'download_config.yaml')
+
+    dump_yaml_config(config, output_config_path)
+
+    run_snakemake_workflow(config_path=output_config_path, snake_file_path=snake_file_path,
+                           output_dir_path=output_dir_path, jobs=jobs, conda_env_dir_path=conda_env_dir,
+                           snakemake_custom_args=snakemake_args)
+
+    os.remove(output_config_path)
+
+
 def parse_cli():
     """
     Parses the CLI arguments.
@@ -175,7 +217,7 @@ def parse_cli():
     parser_run_one.add_argument('-o', '--output_dir', metavar='PATH', default=os.getcwd(),
                                 help='path the output/rotary project directory')
     parser_run_one.add_argument('-d', '--database_dir', metavar='PATH',
-                                help='path the rotary database directory')
+                                help='path to the rotary database directory')
     parser_run_one.add_argument('-j', '--jobs', metavar='JOBS',
                                 help='number of threads that rotary should use (overrides config)')
     parser_run_one.add_argument('-s', '--snakemake_args', metavar='',
@@ -192,7 +234,7 @@ def parse_cli():
     parser_init.add_argument('-o', '--output_dir', metavar='PATH',
                              help='path the output/rotary project directory', default=os.getcwd())
     parser_init.add_argument('-d', '--database_dir', metavar='PATH', required=True,
-                             help='path the rotary database directory')
+                             help='path to the rotary database directory')
     parser_init.add_argument('-i', '--input_dir', metavar='PATH', required=True,
                              help='path to a directory containing Oxford Nanopore long-read and Illumina short-read .fastq(.gz) files')
     parser_init.add_argument('-f', '--force', action='store_true',
@@ -200,6 +242,21 @@ def parse_cli():
     parser_init.add_argument('-ns', '--no_short', action='store_true',
                              help="do not search for short read files")
     parser_init.set_defaults(init=True)
+
+    # =========================
+    # Declare Download Sub-command
+    download_help = """Downloads databases required by rotary to a specific directory """
+    parser_download = subparsers.add_parser('download', help=download_help)
+    parser_download.add_argument('-d', '--database_dir', metavar='PATH', required=True,
+                                 help='path to the rotary database directory')
+    parser_download.add_argument('-c', '--config', metavar='YAML',
+                                 help='path to the rotary yaml config file')
+    parser_download.add_argument('-j', '--jobs', metavar='JOBS',
+                                 help='number of threads that rotary should use (overrides config)')
+    parser_download.add_argument('-s', '--snakemake_args', metavar='',
+                                 help="quoted string with arguments to be passed to snakemake. i.e., -s'--dag' (no space after -s)")
+    parser_download.set_defaults(download=True)
+
     return parser
 
 

@@ -4,10 +4,13 @@
 import os
 import sys
 
+from pungi.utils import is_config_parameter_true
 
 DB_DIR_PATH = config.get('db_dir')
 
 READ_MAPPING_FILE_EXTENSIONS = ['.0123', '.amb', '.ann', '.bwt.2bit.64', '.pac']
+
+CAREFUL_SHORT_READ_POLISHING = is_config_parameter_true(config, "careful_short_read_polishing")
 
 # SAMPLE_NAMES and POLISH_WITH_SHORT_READS are instantiated in rotary.smk
 
@@ -199,7 +202,7 @@ rule polish_polypolish:
     benchmark:
         "{sample}/benchmarks/{step}/polypolish.txt"
     params:
-        careful = "--careful" if str(config.get("careful_short_read_polishing")).lower() == "true" else ""
+        careful = "--careful" if CAREFUL_SHORT_READ_POLISHING else ""
     shell:
         """
         printf "### Polypolish insert filter ###\n" >> {log}
@@ -237,7 +240,7 @@ rule polish_pypolca:
     params:
         outdir = "{sample}/polish/pypolca",
         report= "{sample}/polish/pypolca/{sample}.report",
-        careful = "--careful" if str(config.get("careful_short_read_polishing")).lower() == "true" else "",
+        careful = "--careful" if CAREFUL_SHORT_READ_POLISHING else "",
         mem_per_thread = int(config.get("memory") / config.get("threads",1))
     threads:
         config.get("threads",1)

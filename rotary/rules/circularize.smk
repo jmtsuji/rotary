@@ -11,7 +11,7 @@ DB_DIR_PATH = config.get('db_dir')
 # SAMPLE_NAMES and POLISH_WITH_SHORT_READS are instantiated in rotary.smk
 
 # TODO - does not check the HMM version, only ID. If the HMM version updates, it won't automatically re-download
-rule download_hmm:
+rule download_circular_start_hmm:
     output:
         hmm=os.path.join(DB_DIR_PATH,"hmm",START_HMM_NAME + ".hmm")
     log:
@@ -26,6 +26,12 @@ rule download_hmm:
         mkdir -p {params.db_dir}
         wget -O {output.hmm} {params.url} 2> {log}
         """
+
+rule circularize_download:
+    input:
+        os.path.join(DB_DIR_PATH,"hmm",START_HMM_NAME + ".hmm")
+    output:
+        touch(os.path.join(DB_DIR_PATH,"checkpoints","circularize_downloaded"))
 
 # Writes circular.list with the names of circular contigs if there are any circular contigs
 # Writes linear.list with the names of linear contigs if there are any linear contigs
