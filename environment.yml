@@ -3,13 +3,12 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python=3.9.*
-  - pandas=1.4.*
-  - snakemake=7.*
-  - mamba
-  - wget
-  - psutil=5.9.5
-  - pulp=2.7.0 # temporary workaround for installation of snakemake 7 (force downgrade of pulp)
+  - python=3.11.*
+  - pandas=1.5.*
+  - snakemake=8.*
+  - mamba=1.5.*
+  - wget=1.21.*
+  - psutil=5.9.*
   - zip=3.*
   - pip
   - pip:
