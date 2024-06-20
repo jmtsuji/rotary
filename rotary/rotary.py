@@ -249,8 +249,6 @@ def parse_cli():
     parser_download = subparsers.add_parser('download', help=download_help)
     parser_download.add_argument('-d', '--database_dir', metavar='PATH', required=True,
                                  help='path to the rotary database directory')
-    parser_download.add_argument('-c', '--config', metavar='YAML',
-                                 help='path to the rotary yaml config file')
     parser_download.add_argument('-j', '--jobs', metavar='JOBS',
                                  help='number of threads that rotary should use (overrides config)')
     parser_download.add_argument('-s', '--snakemake_args', metavar='',
