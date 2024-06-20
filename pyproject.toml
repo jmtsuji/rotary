@@ -15,10 +15,9 @@ license = {file = "LICENSE"}
 readme = "README.md"
 
 dependencies = [
-    "pandas ~=1.4",
-    "snakemake ~=7.32",
+    "pandas ~=1.5",
+    "snakemake ~=8.0",
     "psutil ~=5.9",
-    "biopython ~=1.81"
 ]
 
 [tool.setuptools.packages]
