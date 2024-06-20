@@ -39,17 +39,17 @@ rule set_up_sample_directories:
     input:
         SAMPLE_TSV_PATH
     output:
-        long_reads = expand("{sample}/raw/{sample}_long.fastq.gz", sample=SAMPLE_NAMES),
-        short_R1_reads = expand("{sample}/raw/{sample}_R1.fastq.gz", sample=SAMPLE_NAMES) if DATASET_HAS_SHORT_READS else [],
-        short_R2_reads = expand("{sample}/raw/{sample}_R2.fastq.gz", sample=SAMPLE_NAMES) if DATASET_HAS_SHORT_READS else []
+        long_reads = expand("{sample}/raw/long/{sample}_long.fastq.gz", sample=SAMPLE_NAMES),
+        short_R1_reads = expand("{sample}/raw/short/{sample}_R1.fastq.gz", sample=SAMPLE_NAMES) if DATASET_HAS_SHORT_READS else [],
+        short_R2_reads = expand("{sample}/raw/short/{sample}_R2.fastq.gz", sample=SAMPLE_NAMES) if DATASET_HAS_SHORT_READS else []
     run:
         for sample in SAMPLES:
             identifier = sample.identifier
-            symlink_or_compress(sample.long_read_path,f'{identifier}/raw/{identifier}_long.fastq.gz')
+            symlink_or_compress(sample.long_read_path,f'{identifier}/raw/long/{identifier}_long.fastq.gz')
 
             if DATASET_HAS_SHORT_READS:
-                symlink_or_compress(sample.short_read_left_path,f'{identifier}/raw/{identifier}_R1.fastq.gz')
-                symlink_or_compress(sample.short_read_right_path,f'{identifier}/raw/{identifier}_R2.fastq.gz')
+                symlink_or_compress(sample.short_read_left_path,f'{identifier}/raw/short/{identifier}_R1.fastq.gz')
+                symlink_or_compress(sample.short_read_right_path,f'{identifier}/raw/short/{identifier}_R2.fastq.gz')
 
 # Include various modules.
 include: './qc.smk'
