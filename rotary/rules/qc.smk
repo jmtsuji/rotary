@@ -407,6 +407,7 @@ rule run_fastqc_quality_controlled_reads:
         fastqc -o {params.outdir} --memory {resources.mem_mb} {input} > {log} 2>&1
         """
 
+        
 def generate_fastqc_file_list(wildcards):
     """
     Generate a list of FastQC file paths based on the specified parameters.
@@ -442,7 +443,8 @@ def generate_fastqc_file_list(wildcards):
 
     return fastqc_files
 
-rule run_multiqc:
+  
+rule run_sample_qc_multiqc:
     input:
         generate_fastqc_file_list
     output:
@@ -464,6 +466,7 @@ rule run_multiqc:
         --zip-data-dir {params.qc_stats_dir} > {log} 2>&1
         """
 
+        
 rule qc_stats:
     input:
         multqc_short_report=expand("{sample}/qc/qc_stats/short/{sample}_short_multiqc_report.html", sample=SAMPLE_NAMES) if POLISH_WITH_SHORT_READS else [],
