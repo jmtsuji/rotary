@@ -418,6 +418,7 @@ rule run_fastqc_quality_controlled_reads:
         fastqc -o {params.outdir} --memory {resources.mem_mb} {input} > {log} 2>&1
         """
 
+        
 def generate_fastqc_file_list(wildcards):
     """
     Generate a list of FastQC file paths based on the specified parameters.
