@@ -83,6 +83,7 @@ rule download_ncbi_contamination_reference:
         fi
         """
 
+
 rule set_up_custom_contamination_references:
     output:
         expand(os.path.join(DB_DIR_PATH, 'contamination_references', 'custom', '{contaminant_name}.fna.gz'),
@@ -90,6 +91,14 @@ rule set_up_custom_contamination_references:
     run:
         for name, path in zip(CUSTOM_CONTAMINATION_FILE_NAMES,CUSTOM_CONTAMINATION_FILEPATHS):
             symlink_or_compress(path, os.path.join(DB_DIR_PATH, 'contamination_references', 'custom', f'{name}.fna.gz'))
+
+rule qc_download:
+    input:
+        short_read_adapters=os.path.join(DB_DIR_PATH, "adapters.fasta"),
+        contamination_references=expand(os.path.join(DB_DIR_PATH, 'contamination_references', 'ncbi',
+            '{accession}.fna.gz'), accession=CONTAMINATION_NCBI_ACCESSIONS)
+    output:
+        touch(os.path.join(DB_DIR_PATH,"checkpoints","qc_downloaded"))
 
 rule nanopore_qc_filter:
     input:
@@ -468,7 +477,7 @@ rule run_sample_qc_multiqc:
         --zip-data-dir {params.qc_stats_dir} > {log} 2>&1
         """
 
-        
+
 rule generate_long_aggregate_qc_stats:
     input:
         expand("{sample}/qc/qc_stats/long/{sample}_long_multiqc_report_data.zip", sample=SAMPLE_NAMES)
@@ -496,7 +505,7 @@ rule generate_short_aggregate_qc_stats:
         write_fastqc_summary_tsv(short_sanitized_fastqc_data, output[0], 'R1')
         write_fastqc_summary_tsv(short_sanitized_fastqc_data, output[1],'R2')
 
-        
+
 rule qc_stats:
     input:
         multqc_short_report=expand("{sample}/qc/qc_stats/short/{sample}_short_multiqc_report.html", sample=SAMPLE_NAMES) if POLISH_WITH_SHORT_READS else [],

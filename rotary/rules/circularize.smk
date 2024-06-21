@@ -11,7 +11,7 @@ DB_DIR_PATH = config.get('db_dir')
 # SAMPLE_NAMES and POLISH_WITH_SHORT_READS are instantiated in rotary.smk
 
 # TODO - does not check the HMM version, only ID. If the HMM version updates, it won't automatically re-download
-rule download_hmm:
+rule download_circular_start_hmm:
     output:
         hmm=os.path.join(DB_DIR_PATH,"hmm",START_HMM_NAME + ".hmm")
     log:
@@ -27,6 +27,12 @@ rule download_hmm:
         wget -O {output.hmm} {params.url} 2> {log}
         """
 
+rule circularize_download:
+    input:
+        os.path.join(DB_DIR_PATH,"hmm",START_HMM_NAME + ".hmm")
+    output:
+        touch(os.path.join(DB_DIR_PATH,"checkpoints","circularize_downloaded"))
+
 # Writes circular.list with the names of circular contigs if there are any circular contigs
 # Writes linear.list with the names of linear contigs if there are any linear contigs
 # Then, the DAG is re-evaluated. Circularization is only run if there are circular contigs.
@@ -35,7 +41,8 @@ checkpoint split_circular_and_linear_contigs:
     input:
         "{sample}/polish/{sample}_contig_info.tsv"
     output:
-        directory("{sample}/circularize/filter/lists")
+        directory("{sample}/circularize/filter/lists"),
+        directory("{sample}/circularize/medaka")
     run:
         contig_info = pd.read_csv(input[0], sep='\t')
         contig_info_filtered = contig_info[contig_info['pass_coverage_filter'] == 'Y']
@@ -44,10 +51,13 @@ checkpoint split_circular_and_linear_contigs:
         linear_contigs = contig_info_filtered[contig_info_filtered['circular'] == 'N']
 
         os.makedirs(output[0],exist_ok=True)
+        os.makedirs(output[1],exist_ok=True)
 
         # Only output files if there is >=1 entry
         if circular_contigs.shape[0] >= 1:
             circular_contigs['contig'].to_csv(os.path.join(output[0],'circular.list'),header=None,index=False)
+            circular_contigs['contig'].to_csv(os.path.join(output[1],f'{wildcards.sample}_contigs.txt'),
+                header=None,index=False)
 
         if linear_contigs.shape[0] >= 1:
             linear_contigs['contig'].to_csv(os.path.join(output[0],'linear.list'),header=None,index=False)
