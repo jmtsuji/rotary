@@ -95,24 +95,70 @@ def generate_fastqc_sample_name_stage_and_direction_columns(fastqc_data: pd.Data
     fastqc_data[['Direction', 'Sample', 'Stage']] = processed_sample_columns
 
 
+def convert_total_bases_row_to_mbp(total_base_pairs_amount_and_unit: pd.DataFrame):
+    """
+    Convert the total base pairs column to only megabase pairs (MBP).
+
+    :param total_base_pairs_amount_and_unit: A pandas DataFrame containing the total base pairs amount and unit.
+    :return: The converted amount in megabase pairs.
+    """
+    units_to_mbp = {
+        'gbp': 1000,
+        'mbp': 1,
+        'kbp': 0.001,
+        'bp': 0.000001
+    }
+
+    unit = total_base_pairs_amount_and_unit['unit']
+    amount = np.float64(total_base_pairs_amount_and_unit['amount'])
+
+    if unit in units_to_mbp:
+        return amount * units_to_mbp[unit]
+    else:
+        raise ValueError(f'Unknown total base pairs unit: {unit}')
+
+
+def convert_total_bases_to_numeric(fastqc_data: pd.DataFrame, total_bases_column='Total Bases'):
+    """
+    Converts the total bases column to a numeric column containing the total bases converted to mega base pairs (Mbp).
+
+    :param fastqc_data: A pandas DataFrame containing the FastQC data.
+    :param total_bases_column: The column name in the DataFrame that contains the total bases information.
+    """
+    split_total_bases = fastqc_data[total_bases_column].str.split(' ', n=1, expand=True)
+    split_total_bases.columns = ['amount', 'unit']
+    split_total_bases['unit'] = split_total_bases['unit'].str.strip().str.lower()
+
+    # Create a new total bases column that uses float values instead of strings.
+    fastqc_data['Total Bases (Mbp)'] = split_total_bases.apply(convert_total_bases_row_to_mbp, axis=1)
+
+
+def split_sequence_length_to_min_max(fastqc_data: pd.DataFrame, sequence_length_column='Sequence length'):
+    """
+    Split the sequence length column into two float columns 'Sequence Length Min' and 'Sequence Length Max'.
+
+    :param fastqc_data: The DataFrame containing the fastqc data.
+    :param sequence_length_column:  The name of the sequence length column in the DataFrame.
+    """
+    # Split the sequence length column into two columns that two float columns.
+    fastqc_data[['Sequence Length Min', 'Sequence Length Max']] = \
+        fastqc_data[sequence_length_column].str.split('-', expand=True).astype(np.float64)
+
+
 def convert_string_fastqc_data_to_numeric(fastqc_data: pd.DataFrame, total_bases_column='Total Bases',
                                           sequence_length_column='Sequence length'):
     """
-    Converts total bases and sequence length columns of FastQC data from string format to numeric format.
-    The total bases column is directly converted to numeric,
-    and the sequence length column is split into min and max sequence length columns.
+    Converts the string-formatted FastQC data to numeric values.
 
-    :param fastqc_data: A pandas DataFrame containing the FastQC data.
-    :param total_bases_column: The name of column in the DataFrame containing total bases data.
-    :param sequence_length_column: The name of column in the DataFrame containing sequence length data.
+    :param fastqc_data: A pandas DataFrame containing FastQC data.
+    :param total_bases_column: The name of the column with total bases data (default: 'Total Bases').
+    :param sequence_length_column: The name of the column with sequence length data (default: 'Sequence length').
     """
-    # Create a new total bases column that uses float values instead of strings.
-    fastqc_data['Total Bases (Mbp)'] = fastqc_data[total_bases_column].str.replace(' Mbp', ' ').astype(
-        np.float64)
+    # Convert total bases to numerics
+    convert_total_bases_to_numeric(fastqc_data, total_bases_column)
 
-    # Split the sequence length column into two columns that two float columns.
-    fastqc_data[['Sequence Length Min', 'Sequence Length Max']] = fastqc_data[
-        sequence_length_column].str.split('-', expand=True).astype(np.float64)
+    # Split sequence lengths to numeric columns `min` and `max`
+    split_sequence_length_to_min_max(fastqc_data, sequence_length_column)
 
 
 def generate_fastqc_before_and_after_comparison_data(single_direction_fastqc_data: pd.DataFrame,
