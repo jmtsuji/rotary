@@ -47,6 +47,9 @@ checkpoint split_circular_and_linear_contigs:
         contig_info = pd.read_csv(input[0], sep='\t')
         contig_info_filtered = contig_info[contig_info['pass_coverage_filter'] == 'Y']
 
+        if len(contig_info_filtered) == 0:
+            raise ValueError(f'No contigs pass coverage filter for sample {wildcards.sample}.')
+
         circular_contigs = contig_info_filtered[contig_info_filtered['circular'] == 'Y']
         linear_contigs = contig_info_filtered[contig_info_filtered['circular'] == 'N']
 
