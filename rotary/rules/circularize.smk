@@ -104,7 +104,7 @@ rule search_contig_start:
     shell:
         """
         printf "### Predict genes ###\n" > {log}
-        prodigal -i {input.contigs} -a {output.orf_predictions} -d {output.gene_predictions} \
+        prodigal -i {input.contigs} -a {output.orf_predictions} -d {output.gene_predictions} -p meta \
           -f gff -o {output.annotation_gff} 2>> {log}
 
         printf "\n\n### Find HMM hits ###\n\n" >> {log}
