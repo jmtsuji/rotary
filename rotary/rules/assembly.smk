@@ -92,8 +92,7 @@ rule assembly_end_repair:
 
 rule run_quast:
     input:
-        flye_assembly = "{sample}/assembly/flye/{sample}_flye_assembly.fasta",
-        end_repair_assembly= "{sample}/assembly/end_repair/{sample}_end_repair_assembly.fasta",
+        flye_assembly = "{sample}/assembly/flye/{sample}_flye_assembly.fasta"
     output:
         stats_dir=directory("{sample}/assembly/stats/"),
         report=multiext("{sample}/assembly/stats/report", '.html', '.tex', '.tsv', '.txt', '.pdf'),
