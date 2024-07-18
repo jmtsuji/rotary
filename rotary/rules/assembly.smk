@@ -108,7 +108,7 @@ rule run_quast:
     shell:
         """
         quast -t {threads} --space-efficient \
-        --labels "{wildcards.sample}_flye, {wildcards.sample}_end_repair" \
+        --labels "{wildcards.sample}_flye" \
         -o {output.stats_dir} {input} > {log} 2>&1
         """
 
