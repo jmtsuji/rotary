@@ -3,7 +3,7 @@
 
 import os
 from pungi.utils import is_config_parameter_true
-from rotary.annotation import AnnotationMap
+from rotary.annotation import AnnotationMap, combine_checkm_reports
 
 VERSION_DFAST="1.2.18"
 VERSION_EGGNOG="5.0.0" # See http://eggnog5.embl.de/#/app/downloads
@@ -303,6 +303,16 @@ rule run_checkm2:
         mv {output.outdir}/quality_report.tsv {output.quality_report}
         """
 
+rule aggregate_checkm2_reports:
+    input:
+        expand("{sample}/annotation/checkm/{sample}_checkm_quality_report.tsv", sample=SAMPLE_NAMES)
+    output:
+        'stats/annotation/aggregate_checkm_quality_report.tsv'
+    benchmark:
+        "benchmarks/annotation/aggregate_checkm.benchmark.txt"
+    run:
+        combine_checkm_reports(input,output[0])
+
 
 if POLISH_WITH_SHORT_READS == True:
     # TODO - clarify name compared to previous mapping step
@@ -413,6 +423,7 @@ rule summarize_annotation:
 
 rule annotation:
     input:
-        expand("{sample}/{sample}_annotation_summary.zip",sample=SAMPLE_NAMES),
+        summeries=expand("{sample}/{sample}_annotation_summary.zip",sample=SAMPLE_NAMES),
+        aggregate_checkm_report='stats/annotation/aggregate_checkm_quality_report.tsv'
     output:
         temp(touch("checkpoints/annotation"))
