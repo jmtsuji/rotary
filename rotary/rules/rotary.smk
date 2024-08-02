@@ -46,8 +46,6 @@ rule all:
         "checkpoints/annotation"
 
 rule set_up_sample_directory:
-    input:
-        SAMPLE_TSV_PATH
     output:
         long_reads = "{sample}/raw/long/{sample}_long.fastq.gz",
         short_R1_reads = "{sample}/raw/short/{sample}_R1.fastq.gz" if DATASET_HAS_SHORT_READS else [],
