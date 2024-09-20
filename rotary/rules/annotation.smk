@@ -3,7 +3,7 @@
 
 import os
 from pungi.utils import is_config_parameter_true
-from rotary.annotation import AnnotationMap, combine_checkm_reports
+from rotary.annotation import AnnotationMap, combine_tabular_reports
 
 VERSION_DFAST="1.2.18"
 VERSION_EGGNOG="5.0.0" # See http://eggnog5.embl.de/#/app/downloads
