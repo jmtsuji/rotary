@@ -278,6 +278,17 @@ rule run_gtdbtk:
         tail -n +2 {output.outdir}/gtdbtk.*.summary.tsv >> {output.annotation}
         """
 
+rule aggregate_gtdbtk_reports:
+    input:
+        expand("{sample}/annotation/gtdbtk/{sample}_gtdbtk.summary.tsv", sample=SAMPLE_NAMES)
+    output:
+        'stats/annotation/aggregate_gtdbtk_summary_report.tsv'
+    benchmark:
+        "benchmarks/annotation/aggregate_gtdbtk.benchmark.txt"
+    run:
+        combine_tabular_reports(input,output[0])
+
+
 rule run_checkm2:
     input:
         genome="{sample}/annotation/dfast/{sample}_genome.fna",
@@ -311,7 +322,7 @@ rule aggregate_checkm2_reports:
     benchmark:
         "benchmarks/annotation/aggregate_checkm.benchmark.txt"
     run:
-        combine_checkm_reports(input,output[0])
+        combine_tabular_reports(input,output[0])
 
 
 if POLISH_WITH_SHORT_READS == True:
@@ -424,6 +435,7 @@ rule summarize_annotation:
 rule annotation:
     input:
         summeries=expand("{sample}/{sample}_annotation_summary.zip",sample=SAMPLE_NAMES),
-        aggregate_checkm_report='stats/annotation/aggregate_checkm_quality_report.tsv'
+        aggregate_checkm_report='stats/annotation/aggregate_checkm_quality_report.tsv',
+        aggregate_gtdbtk_report='stats/annotation/aggregate_gtdbtk_summary_report.tsv'
     output:
         temp(touch("checkpoints/annotation"))
