@@ -133,8 +133,8 @@ rule aggregate_assembly_stats_multiqc:
     input:
         expand("{sample}/assembly/stats/",sample=SAMPLE_NAMES)
     output:
-        multqc_report="stats/assembly/all_samples_assembly_stats_multiqc_report.html",
-        multqc_report_data="stats/assembly/all_samples_assembly_stats_multiqc_report_data.zip"
+        multqc_report='aggregate_stats/assembly/all_samples_assembly_stats_multiqc_report.html",
+        multqc_report_data='aggregate_stats/assembly/all_samples_assembly_stats_multiqc_report_data.zip"
     conda:
         "../envs/qc.yaml"
     log:
@@ -142,7 +142,7 @@ rule aggregate_assembly_stats_multiqc:
     benchmark:
         "benchmarks/assembly/assembly_stats_multiqc.txt"
     params:
-        qc_stats_dir="stats/assembly/"
+        qc_stats_dir='aggregate_stats/assembly/"
     shell:
         """
         multiqc --outdir {params.qc_stats_dir} \
@@ -156,7 +156,7 @@ rule assembly:
     input:
         assembly_fasta = expand("{sample}/assembly/{sample}_assembly.fasta",sample=SAMPLE_NAMES),
         assembly_circular_info = expand("{sample}/assembly/{sample}_circular_info.tsv", sample=SAMPLE_NAMES),
-        assembly_multqc_report="stats/assembly/all_samples_assembly_stats_multiqc_report.html",
-        assembly_multqc_report_data="stats/assembly/all_samples_assembly_stats_multiqc_report_data.zip"
+        assembly_multqc_report='aggregate_stats/assembly/all_samples_assembly_stats_multiqc_report.html",
+        assembly_multqc_report_data='aggregate_stats/assembly/all_samples_assembly_stats_multiqc_report_data.zip"
     output:
         temp(touch("checkpoints/assembly"))
