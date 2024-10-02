@@ -17,7 +17,7 @@ conda env create -n rotary --file=rotary/environment.yml
 
 conda activate rotary
 
-cd ../rotary
+cd rotary
 pip install --editable .
 
 # See command line options
