@@ -335,7 +335,7 @@ if POLISH_WITH_SHORT_READS == True:
         output:
             mapping="{sample}/annotation/coverage/{sample}_short_read.bam" if KEEP_BAM_FILES else temp("{sample}/annotation/coverage/{sample}_short_read.bam"),
             index=temp("{sample}/annotation/coverage/{sample}_short_read.bam.bai"),
-            coverage="{sample}/annotation/coverage/{sample}_short_read_coverage.tsv",
+            coverage=temp("{sample}/annotation/coverage/{sample}_short_read_coverage_raw.tsv"),
             read_mapping_files= temp(multiext("{sample}/annotation/dfast/{sample}_genome.fna",
                 *READ_MAPPING_FILE_EXTENSIONS)) # Variable declared in polish.smk
         conda:
@@ -369,7 +369,7 @@ rule calculate_final_long_read_coverage:
     output:
         mapping="{sample}/annotation/coverage/{sample}_long_read.bam" if KEEP_BAM_FILES else temp("{sample}/annotation/coverage/{sample}_long_read.bam"),
         index=temp("{sample}/annotation/coverage/{sample}_long_read.bam.bai"),
-        coverage="{sample}/annotation/coverage/{sample}_long_read_coverage.tsv"
+        coverage=temp("{sample}/annotation/coverage/{sample}_long_read_coverage_raw.tsv")
     conda:
         "../envs/mapping.yaml"
     log:
@@ -391,6 +391,36 @@ rule calculate_final_long_read_coverage:
         samtools index -@ {threads} {output.mapping}
         samtools coverage {output.mapping} > {output.coverage}
         """
+
+
+rule reformat_final_read_coverage:
+    input:
+        "{sample}/annotation/coverage/{sample}_{long_or_short}_read_coverage_raw.tsv"
+    output:
+        "{sample}/annotation/coverage/{sample}_{long_or_short}_read_coverage.tsv"
+    params:
+        sample_id="{sample}",
+        read_type="{long_or_short}"
+    run:
+        read_coverage = pd.read_csv(input[0], sep='\t')\
+            .rename(columns={'#rname':'contig'})
+
+        read_coverage.insert(0, column='sample', value=params.sample_id)
+        read_coverage.insert(1, column='read_type', value=params.read_type)
+
+        read_coverage.to_csv(output[0], sep='\t', index=False)
+
+
+rule aggregate_final_read_coverage:
+    input:
+        expand("{sample}/annotation/coverage/{sample}_{long_or_short}_read_coverage.tsv", sample=SAMPLE_NAMES, long_or_short=['long','short']) \
+            if POLISH_WITH_SHORT_READS == True else expand("{sample}/annotation/coverage/{sample}_long_read_coverage.tsv", sample=SAMPLE_NAMES)
+    output:
+        'aggregate_stats/annotation/aggregate_read_coverage.tsv'
+    benchmark:
+        "benchmarks/annotation/aggregate_read_coverage.txt"
+    run:
+        combine_tabular_reports(input,output[0])
 
 
 rule symlink_logs:
@@ -436,6 +466,7 @@ rule annotation:
     input:
         summeries=expand("{sample}/{sample}_annotation_summary.zip",sample=SAMPLE_NAMES),
         aggregate_checkm_report='aggregate_stats/annotation/aggregate_checkm_quality_report.tsv',
-        aggregate_gtdbtk_report='aggregate_stats/annotation/aggregate_gtdbtk_summary_report.tsv'
+        aggregate_gtdbtk_report='aggregate_stats/annotation/aggregate_gtdbtk_summary_report.tsv',
+        aggregate_final_read_coverage='aggregate_stats/annotation/aggregate_read_coverage.tsv'
     output:
         temp(touch("checkpoints/annotation"))
