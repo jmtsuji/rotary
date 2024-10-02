@@ -464,9 +464,9 @@ rule summarize_annotation:
 
 rule annotation:
     input:
-        summeries=expand("{sample}/{sample}_annotation_summary.zip",sample=SAMPLE_NAMES),
-        aggregate_checkm_report='aggregate_stats/annotation/aggregate_checkm_quality_report.tsv',
-        aggregate_gtdbtk_report='aggregate_stats/annotation/aggregate_gtdbtk_summary_report.tsv',
-        aggregate_final_read_coverage='aggregate_stats/annotation/aggregate_read_coverage.tsv'
+        summaries=expand("{sample}/{sample}_annotation_summary.zip",sample=SAMPLE_NAMES),
+        aggregate_checkm_report='aggregate_stats/annotation/aggregate_checkm_quality_report.tsv' if ANNOTATION_MAP.checkm2 else [],
+        aggregate_gtdbtk_report='aggregate_stats/annotation/aggregate_gtdbtk_summary_report.tsv' if ANNOTATION_MAP.gtdbtk else [],
+        aggregate_final_read_coverage='aggregate_stats/annotation/aggregate_read_coverage.tsv' if ANNOTATION_MAP.coverage else []
     output:
         temp(touch("checkpoints/annotation"))
