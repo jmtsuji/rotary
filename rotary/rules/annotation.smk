@@ -240,8 +240,8 @@ rule run_eggnog:
         """
         mkdir -p {output.outdir}/tmp
         emapper.py --cpu {threads} -i {input.protein} --itype proteins -m {params.search_tool} \
-          --sensmode {params.sensmode} --dbmem --output eggnog --output_dir {output.outdir} \
-          --temp_dir {output.outdir}/tmp --output {params.prefix} \
+          --sensmode {params.sensmode} --dbmem --output {params.prefix} --output_dir {output.outdir} \
+          --temp_dir {output.outdir}/tmp \
           --data_dir {params.db} --override > {log} 2>&1
         rm -r {output.outdir}/tmp
         """
