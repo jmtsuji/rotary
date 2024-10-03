@@ -47,6 +47,9 @@ checkpoint split_circular_and_linear_contigs:
         contig_info = pd.read_csv(input[0], sep='\t')
         contig_info_filtered = contig_info[contig_info['pass_coverage_filter'] == 'Y']
 
+        if len(contig_info_filtered) == 0:
+            raise ValueError(f'No contigs pass coverage filter for sample {wildcards.sample}.')
+
         circular_contigs = contig_info_filtered[contig_info_filtered['circular'] == 'Y']
         linear_contigs = contig_info_filtered[contig_info_filtered['circular'] == 'N']
 
@@ -101,7 +104,7 @@ rule search_contig_start:
     shell:
         """
         printf "### Predict genes ###\n" > {log}
-        prodigal -i {input.contigs} -a {output.orf_predictions} -d {output.gene_predictions} \
+        prodigal -i {input.contigs} -a {output.orf_predictions} -d {output.gene_predictions} -p meta \
           -f gff -o {output.annotation_gff} 2>> {log}
 
         printf "\n\n### Find HMM hits ###\n\n" >> {log}

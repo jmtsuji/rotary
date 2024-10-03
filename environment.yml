@@ -5,7 +5,7 @@ channels:
 dependencies:
   - python=3.11.*
   - pandas=1.5.*
-  - snakemake=8.*
+  - snakemake=7.*
   - mamba=1.5.*
   - wget=1.21.*
   - psutil=5.9.*

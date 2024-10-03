@@ -5,6 +5,7 @@ Created by: Lee Bergstrand (2024)
 
 Description: Code for dealing with genome annotations.
 """
+import pandas as pd
 
 
 class AnnotationMap(object):
@@ -46,3 +47,17 @@ class AnnotationMap(object):
 
     def __str__(self):
         return self.__repr__()
+
+
+def combine_tabular_reports(report_paths, combined_report_path, delimiter='\t'):
+    """
+    This function takes a list of paths to individual checkm TSV reports, combines them into a single dataframe
+    and saves the combined dataframe into TSV a specified path.
+
+    :param report_paths: List of paths to individual report TSVs
+    :param combined_report_path: Path to save the combined TSV report
+    :param delimiter: The column delimiter character for the tabular text report
+    """
+    checkm_dataframes = [pd.read_csv(path, delimiter=delimiter) for path in report_paths]
+    combined_dataframe = pd.concat(checkm_dataframes)
+    combined_dataframe.to_csv(combined_report_path, sep=delimiter, index=False)
