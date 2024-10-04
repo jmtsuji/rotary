@@ -1,6 +1,5 @@
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
   - gtdbtk=2.4.0 # Remember to update VERSION_GTDB in rotary/rules/annotation.smk if the GTDB version updates
