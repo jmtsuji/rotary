@@ -26,7 +26,7 @@ rule download_dfast_db:
         db_dir=directory(DFAST_DB_PATH),
         install_finished=os.path.join(DB_DIR_PATH,"checkpoints","dfast_" + VERSION_DFAST)
     conda:
-        "../envs/annotation_dfast.yaml"
+        "../envs/dfast.yaml"
     log:
         "logs/download/dfast_db_download.log"
     benchmark:
@@ -178,7 +178,7 @@ rule run_dfast:
         dfast_pseudogene="{sample}/annotation/dfast/{sample}_pseudogene_summary.tsv",
         outdir=directory("{sample}/annotation/dfast")
     conda:
-        "../envs/annotation_dfast.yaml"
+        "../envs/dfast.yaml"
     log:
         "{sample}/logs/annotation/annotation_dfast.log"
     benchmark:

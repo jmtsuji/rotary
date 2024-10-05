@@ -18,7 +18,7 @@ rule assembly_flye:
         contigger_dir=temp(directory("{sample}/assembly/flye/30-contigger")),
         polishing_dir=temp(directory("{sample}/assembly/flye/40-polishing")) if config.get("flye_polishing_rounds") > 0 else []
     conda:
-        "../envs/assembly_flye.yaml"
+        "../envs/flye.yaml"
     log:
         "{sample}/logs/assembly/assembly_flye.log"
     benchmark:
