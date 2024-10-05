@@ -25,7 +25,7 @@ class AnnotationMap(object):
             checkm2 (bool): True if 'checkm2' annotation should be run, False otherwise.
             coverage (bool): True if 'coverage' annotation should be run, False otherwise.
         """
-        self.expected_annotations = ['dfast_func', 'eggnog', 'gtdbtk', 'checkm2', 'coverage']
+        self.expected_annotations = ['dfast_func', 'eggnog', 'gtdbtk', 'checkm2', 'coverage', 'prokka_func']
 
         # Convert the annotations to be lower cases in case the user makes a small typo.
         annotations_lower = [anno.lower() for anno in annotations]
