@@ -240,7 +240,11 @@ wget -O sample_fastq_dir/ecoli_R2.fastq.gz ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SR
 
 # For the long read data, to get the qualtiy scores (i.e., not SRA Lite format), you will need to use the SRA Tookit
 #   available here: https://github.com/ncbi/sra-tools/wiki (accessed 2023.12.20). You can then download the files using:
-prefetch SRR21124986 && fasterq-dump -Z SRR21124986 | gzip > sample_fastq_dir/ecoli.fastq.gz
+cd sample_fastq_dir
+prefetch -O SRR21124986 SRR21124986 && fasterq-dump SRR21124986
+gzip -c SRR21124986.fastq > ecoli.fastq.gz 
+rm -r SRR21124986 SRR21124986.fastq
+cd ..
 # Otherwise, if you are OK with quality scores stripped out (not what the test was run with), you can just using the following 
 #  command to directly output the FastQ file (this command is commented out for clarity):
 # wget -O sample_fastq_dir/ecoli.fastq.gz https://www.be-md.ncbi.nlm.nih.gov/Traces/sra-reads-be/fastq?acc=SRR21124986
